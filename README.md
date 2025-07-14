@@ -1,6 +1,9 @@
 # MegaTunix Redux - Modern Automotive Tuning Software
 
-[![Build Status](https://github.com/RallyPat/MegaTunixRedux/workflows/Build%20and%20Test%20MegaTunix%20Redux/badge.svg)](https://github.com/RallyPat/MegaTunixRedux/actions)
+[![Build Status](https://github.com/RallyPat/MegaTunixRedux/workflows/Build%20and%20Test%20MegaTunix%20Red### Advanced Configuration
+See the [Configuration Guide](docs/configuration.md) for detailed options.
+
+## 📚 Documentationge.svg)](https://github.com/RallyPat/MegaTunixRedux/actions)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![C Standard](https://img.shields.io/badge/C-C17-blue.svg)](https://en.wikipedia.org/wiki/C17_(C_standard_revision))
 [![GTK Version](https://img.shields.io/badge/GTK-4.12+-green.svg)](https://gtk.org/)
@@ -162,51 +165,7 @@ rate_limit = 10
 ### Advanced Configuration
 See the [Configuration Guide](docs/configuration.md) for detailed options.
 
-## 📊 Performance
-
-MegaTunix Redux 2025 delivers significant performance improvements:
-
-- **50% faster startup** time compared to legacy versions
-- **30% reduced memory** usage through optimized data structures  
-- **Real-time rendering** at 60fps for 3D visualizations
-- **Sub-millisecond latency** for ECU communication
-
-## 🛡️ Security
-
-Security is a top priority in MegaTunix Redux 2025:
-
-- **Input Validation** - All user inputs are sanitized and validated
-- **Memory Safety** - Secure memory handling prevents buffer overflows
-- **Network Security** - Encrypted connections for remote tuning
-- **Rate Limiting** - Protection against DOS attacks
-- **Audit Logging** - Comprehensive logging of all operations
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-```bash
-# Install development dependencies
-sudo apt install doxygen valgrind cppcheck clang-format
-
-# Run tests
-meson test -C builddir
-
-# Generate documentation
-ninja -C builddir docs
-
-# Run static analysis
-cppcheck --enable=all src/
-```
-
-### Code Standards
-
-- **C17** standard compliance
-- **Linux kernel** style formatting (automated with clang-format)
-- **Comprehensive testing** with >80% coverage
-- **Documentation** for all public APIs
+## � Documentation
 
 ## 📚 Documentation
 
@@ -214,30 +173,6 @@ cppcheck --enable=all src/
 - [Developer Guide](docs/developer.md) - API reference and architecture
 - [Hardware Compatibility](docs/hardware.md) - Supported ECUs and interfaces
 - [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
-
-## 📞 Support
-
-- **GitHub Issues** - Bug reports and feature requests
-- **Discussions** - Community support and ideas
-- **MSExtra Forum** - [MegaSquirt community](http://www.msextra.com/forums/)
-- **LibreEMS Forum** - [LibreEMS community](https://forums.libreems.org)
-
-## 📈 Roadmap
-
-### 2025 Q2
-- [ ] Complete GTK4 migration
-- [ ] Enhanced plugin system
-- [ ] Mobile companion app
-
-### 2025 Q3
-- [ ] Cloud data synchronization  
-- [ ] AI-assisted tuning suggestions
-- [ ] WebAssembly export
-
-### 2025 Q4
-- [ ] CAN bus native support
-- [ ] Professional licensing tier
-- [ ] Training simulator mode
 
 ## ⚖️ License
 
