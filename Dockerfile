@@ -1,8 +1,8 @@
-# MegaTunix Redux 2025 Development Environment
+# MegaTunix Redux Development Environment
 FROM ubuntu:22.04
 
 LABEL maintainer="MegaTunix Redux Development Team"
-LABEL description="Development environment for MegaTunix Redux 2025"
+LABEL description="Development environment for MegaTunix Redux"
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive

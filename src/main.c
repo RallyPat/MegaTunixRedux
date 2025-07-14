@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2002-2012 by Dave J. Andruczyk <djandruczyk at yahoo dot com>
- * Modernized for 2025 as MegaTunix Redux
+ * Modernized as MegaTunix Redux
  *
  * Linux Megasquirt tuning software
  * 

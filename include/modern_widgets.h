@@ -1,5 +1,5 @@
 /*
- * Modern widget system header for MegaTunix Redux 2025
+ * Modern widget system header for MegaTunix Redux
  */
 
 #ifndef __MODERN_WIDGETS_H__

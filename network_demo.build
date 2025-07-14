@@ -1,0 +1,28 @@
+# Network Demo Build Configuration
+# This builds the network security demo as a separate executable
+
+network_demo_sources = [
+    'src/network_demo.c',
+    'src/network_security.c',
+    'src/security_utils.c',
+    'src/stubs.c'
+]
+
+network_demo_exe = executable('network-demo',
+    network_demo_sources,
+    dependencies: [
+        glib_dep,
+        gio_dep,
+        gobject_dep,
+        gtk_dep,
+        json_glib_dep,
+        gnutls_dep
+    ],
+    include_directories: inc_dir,
+    install: false
+)
+
+# Test target for network demo
+test('network-demo-test', network_demo_exe, 
+     args: ['--help'],
+     timeout: 10)

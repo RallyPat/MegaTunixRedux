@@ -1,5 +1,5 @@
 /*
- * Speeduino Plugin Usage Example for MegaTunix Redux 2025
+ * Speeduino Plugin Usage Example for MegaTunix Redux
  * 
  * This example demonstrates how to use the Speeduino plugin to connect
  * to and communicate with a Speeduino ECU.

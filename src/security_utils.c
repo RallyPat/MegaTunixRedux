@@ -1,5 +1,5 @@
 /*
- * Security utilities for MegaTunix Redux 2025
+ * Security utilities for MegaTunix Redux
  * Secure string handling and input validation
  */
 

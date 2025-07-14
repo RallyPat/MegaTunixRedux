@@ -229,7 +229,7 @@ static void on_action_about(GSimpleAction *action, GVariant *parameter, gpointer
     MtxApplication *app = MTX_APPLICATION(user_data);
     
     GtkWidget *about_dialog = gtk_about_dialog_new();
-    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(about_dialog), "MegaTunix Redux 2025");
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(about_dialog), "MegaTunix Redux");
     gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(about_dialog), "1.0.0");
     gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(about_dialog), 
                                   "Copyright © 2002-2025 David J. Andruczyk");

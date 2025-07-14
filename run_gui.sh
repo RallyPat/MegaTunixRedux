@@ -5,7 +5,7 @@
 cd /home/pat/Documents/Github\ Repos/MegaTunixRedux
 
 echo "=========================================="
-echo "MegaTunix Redux 2025 - GUI Demo"
+echo "MegaTunix Redux - GUI Demo"
 echo "=========================================="
 echo ""
 echo "🚀 Starting MegaTunix Redux GUI..."

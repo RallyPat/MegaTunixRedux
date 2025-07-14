@@ -168,10 +168,9 @@ G_MODULE_EXPORT void populate_dlog_choices(void)
 		{
 			k++;
 			j = 0;
-		} 
-	}
+		}
 	g_list_free(list);
-	gtk_widget_show_all(vbox);
+	gtk_widget_set_visible(vbox, TRUE);  // GTK4: Replace gtk_widget_show_all
 	set_title(g_strdup(_("Datalogger Ready...")));
 	EXIT();
 	return;

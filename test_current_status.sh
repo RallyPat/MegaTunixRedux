@@ -4,7 +4,7 @@
 # After GTK4 porting progress - January 2025
 
 echo "=========================================="
-echo "MegaTunix Redux 2025 - Current Status"
+echo "MegaTunix Redux - Current Status"
 echo "=========================================="
 echo
 

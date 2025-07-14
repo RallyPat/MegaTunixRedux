@@ -1,7 +1,8 @@
 # Source files
 src_files = [
   'main.c',
-  'core_gui.c',
+  # 'core_gui.c',  # Replaced by core_gui_modern.c for GTK4 migration
+  'core_gui_modern.c',  # Modern GTK4 implementation
   'modern_widgets.c',
   'security_utils.c',
   # 'mtx_application.c',  # Temporarily disabled - has conflicting main function
@@ -11,7 +12,7 @@ src_files = [
   'test_framework.c',
   'init.c',
   'notifications.c',
-  # 'dashboard.c',  # Temporarily disabled - GTK4 event system porting needed
+  # 'dashboard.c',  # GTK4 migration in progress - complex event handling needs more work
   'gui_handlers.c',
   'offline.c',
   'runtime_status.c',

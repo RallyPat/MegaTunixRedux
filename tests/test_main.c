@@ -4,7 +4,7 @@
 #include "plugin_system.h"
 #include "network_security.h"
 
-/* Example unit tests for MegaTunix Redux 2025 */
+/* Example unit tests for MegaTunix Redux */
 
 /* Test security utilities */
 static gboolean test_security_validate_input(MtxTestContext *context, GError **error)
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
     }
     
     /* Generate reports */
-    MtxTestReport *report = mtx_test_report_new("MegaTunix Redux 2025 Test Report");
+    MtxTestReport *report = mtx_test_report_new("MegaTunix Redux Test Report");
     
     /* Add results from all suites */
     GList *suites = mtx_test_runner_get_all_plugins(runner);  /* This should be get_all_suites */

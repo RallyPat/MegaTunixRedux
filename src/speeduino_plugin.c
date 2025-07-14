@@ -1,5 +1,5 @@
 /*
- * Speeduino Protocol Plugin for MegaTunix Redux 2025
+ * Speeduino Protocol Plugin for MegaTunix Redux
  * 
  * This plugin provides communication support for Speeduino ECUs using the 
  * TunerStudio-compatible serial protocol.

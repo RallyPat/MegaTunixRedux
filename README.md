@@ -8,7 +8,7 @@ See the [Configuration Guide](docs/configuration.md) for detailed options.
 [![C Standard](https://img.shields.io/badge/C-C17-blue.svg)](https://en.wikipedia.org/wiki/C17_(C_standard_revision))
 [![GTK Version](https://img.shields.io/badge/GTK-4.12+-green.svg)](https://gtk.org/)
 
-**MegaTunix Redux** is a comprehensive, cross-platform tuning application for automotive Engine Control Units (ECUs), with native support for MegaSquirt, LibreEMS, and Speeduino systems. This is a modernized fork completely rewritten for 2025 with modern GTK4, enhanced security, and improved performance.
+**MegaTunix Redux** is a comprehensive, cross-platform tuning application for automotive Engine Control Units (ECUs), with native support for MegaSquirt, LibreEMS, and Speeduino systems. This is a modernized fork completely rewritten with modern GTK4, enhanced security, and improved performance.
 
 ## Key Features
 
@@ -61,7 +61,7 @@ MegaTunix Redux provides **industry-leading Speeduino support** with comprehensi
 - **Data Logging** - Comprehensive logging with analysis tools
 - **Multi-ECU Support** - MegaSquirt, LibreEMS, and extensible plugin system
 
-### 2025 Enhancements
+### Modern Enhancements
 - **Modern Widget System** - Custom GTK4 widgets with CSS theming
 - **Secure Networking** - Encrypted multi-user tuning sessions
 - **Advanced Analytics** - Built-in performance analysis tools

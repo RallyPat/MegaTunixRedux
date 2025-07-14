@@ -1,5 +1,5 @@
 /*
- * Speeduino Plugin Integration Tests for MegaTunix Redux 2025
+ * Speeduino Plugin Integration Tests for MegaTunix Redux
  */
 
 #include "test_framework.h"

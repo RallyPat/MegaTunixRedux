@@ -7,7 +7,7 @@
 
 G_BEGIN_DECLS
 
-/* Comprehensive Test Framework for MegaTunix Redux 2025 */
+/* Comprehensive Test Framework for MegaTunix Redux */
 
 /* Test types */
 typedef enum {

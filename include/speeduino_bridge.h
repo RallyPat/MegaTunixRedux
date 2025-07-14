@@ -1,5 +1,5 @@
 /*
- * Speeduino Bridge Header for MegaTunix Redux 2025
+ * Speeduino Bridge Header for MegaTunix Redux
  * 
  * This bridge provides a simplified interface to integrate the Speeduino plugin
  * with the main GUI without requiring the full plugin manager system.

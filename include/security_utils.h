@@ -1,5 +1,5 @@
 /*
- * Security utilities header for MegaTunix Redux 2025
+ * Security utilities header for MegaTunix Redux
  */
 
 #ifndef __SECURITY_UTILS_H__

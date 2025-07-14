@@ -1,4 +1,4 @@
-# Tests meson.build for MegaTunix Redux 2025
+# Tests meson.build for MegaTunix Redux
 
 # Test framework sources
 test_framework_sources = [

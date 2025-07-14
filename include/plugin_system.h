@@ -9,10 +9,10 @@
 
 G_BEGIN_DECLS
 
-/* Modern Plugin System for MegaTunix Redux 2025 */
+/* Modern Plugin System for MegaTunix Redux */
 
 /* Plugin API version */
-#define MTX_PLUGIN_API_VERSION "2025.1"
+#define MTX_PLUGIN_API_VERSION "1.0"
 
 /* Plugin types */
 typedef enum {

@@ -1,5 +1,5 @@
 /*
- * Modern widget system for MegaTunix Redux 2025
+ * Modern widget system for MegaTunix Redux
  * GTK4 compatibility layer and widget management
  */
 
@@ -137,7 +137,7 @@ void setup_application_css(void)
 {
     GtkCssProvider *provider;
     const gchar *css_data = 
-        "/* MegaTunix Redux 2025 Modern Theme */\n"
+        "/* MegaTunix Redux Modern Theme */\n"
         ".mtx-gauge {\n"
         "    border-radius: 8px;\n"
         "    box-shadow: 0 2px 4px rgba(0,0,0,0.2);\n"

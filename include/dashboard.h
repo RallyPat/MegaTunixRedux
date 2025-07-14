@@ -50,8 +50,8 @@ struct _Dash_Gauge
 gboolean close_dash(GtkWidget *, gpointer );
  void create_gauge(GtkWidget *);
 gboolean dash_button_event(GtkWidget *, GdkEventButton *, gpointer );
-gboolean dash_configure_event(GtkWidget * , GdkEventConfigure * );
-void dash_context_popup(GtkWidget *, GdkEventButton *);
+gboolean dash_configure_event(GtkWidget *, gpointer); /* GTK4: Updated signature */
+void dash_context_popup(GtkWidget *, gpointer); /* GTK4: Updated event handling */
 void dash_file_chosen(GtkFileChooserButton *, gpointer);
 gboolean dash_key_event(GtkWidget *, GdkEventKey *, gpointer );
 gboolean dash_lookup_attribute(GtkWidget *, MtxGenAttr);

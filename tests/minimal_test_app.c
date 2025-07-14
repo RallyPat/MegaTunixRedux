@@ -18,13 +18,13 @@ static void activate(GtkApplication *app, gpointer user_data)
     GtkWidget *label;
     
     window = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(window), "MegaTunix Redux 2025 - Test");
+    gtk_window_set_title(GTK_WINDOW(window), "MegaTunix Redux - Test");
     gtk_window_set_default_size(GTK_WINDOW(window), 600, 400);
     
     grid = gtk_grid_new();
     gtk_window_set_child(GTK_WINDOW(window), grid);
     
-    label = gtk_label_new("MegaTunix Redux 2025 - Speeduino Plugin Test");
+    label = gtk_label_new("MegaTunix Redux - Speeduino Plugin Test");
     gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 2, 1);
     
     button = gtk_button_new_with_label("Test Speeduino Connection");
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     GtkApplication *app;
     int status;
     
-    printf("=== MegaTunix Redux 2025 - Minimal Test Application ===\n");
+    printf("=== MegaTunix Redux - Minimal Test Application ===\n");
     printf("Testing GTK4 application startup...\n");
     
     app = gtk_application_new("com.megatunix.redux.test", G_APPLICATION_FLAGS_NONE);

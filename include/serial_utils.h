@@ -1,5 +1,5 @@
 /*
- * Serial communication utilities header for MegaTunix Redux 2025
+ * Serial communication utilities header for MegaTunix Redux
  */
 
 #ifndef SERIAL_UTILS_H

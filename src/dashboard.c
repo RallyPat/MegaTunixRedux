@@ -40,6 +40,9 @@
 
 extern gconstpointer *global_data;
 
+/* Forward declarations for GTK4 event handling */
+static void setup_dashboard_event_handlers(GtkWidget* dash, GtkWidget* window);
+
 /*!
   \brief load_dashboard() loads the specified dashboard configuration file
   and initializes the dash.
@@ -214,7 +217,8 @@ G_MODULE_EXPORT GtkWidget * load_dashboard(const gchar *filename, gint index)
   \param event is the pointer to the GdkEventConfigure event structure
   \returns FALSE so other signals run
   */
-G_MODULE_EXPORT gboolean dash_configure_event(GtkWidget *widget, GdkEventConfigure *event)
+/* GTK4: Modified configure event handler - using size allocation instead of GdkEventConfigure */
+G_MODULE_EXPORT gboolean dash_configure_event(GtkWidget *widget, gpointer user_data)
 {
 	gint orig_width = 0;
 	gint orig_height = 0;
@@ -244,8 +248,10 @@ G_MODULE_EXPORT gboolean dash_configure_event(GtkWidget *widget, GdkEventConfigu
 
 	orig_width = (GINT) OBJ_GET(dash,"orig_width");
 	orig_height = (GINT) OBJ_GET(dash,"orig_height");
-	cur_width = event->width;
-	cur_height = event->height;
+	
+	/* GTK4: Use gtk_widget_get_allocated_width/height instead of event->width/height */
+	cur_width = gtk_widget_get_allocated_width(widget);
+	cur_height = gtk_widget_get_allocated_height(widget);
 
 	x_ratio = (float)cur_width/(float)orig_width;
 	y_ratio = (float)cur_height/(float)orig_height;
@@ -307,7 +313,6 @@ G_MODULE_EXPORT void load_elements(GtkWidget *dash, xmlNode *a_node)
   */
 G_MODULE_EXPORT void load_geometry(GtkWidget *dash, xmlNode *node)
 {
-	GdkGeometry hints;
 	xmlNode *cur_node = NULL;
 	gint width = 0;
 	gint height = 0;
@@ -334,11 +339,12 @@ G_MODULE_EXPORT void load_geometry(GtkWidget *dash, xmlNode *node)
 	OBJ_SET(dash,"orig_width", GINT_TO_POINTER(width));
 	OBJ_SET(dash,"orig_height", GINT_TO_POINTER(height));
 	
-	hints.min_width = 100;
-	hints.min_height = 100;
-
-	gtk_window_set_geometry_hints(GTK_WINDOW(gtk_widget_get_toplevel(dash)),NULL,&hints,GDK_HINT_MIN_SIZE);
-
+	/* GTK4: Use gtk_window_set_default_size instead of geometry hints */
+	GtkWidget *toplevel = gtk_widget_get_root(dash);
+	if (GTK_IS_WINDOW(toplevel)) {
+		gtk_window_set_default_size(GTK_WINDOW(toplevel), width, height);
+		gtk_window_set_resizable(GTK_WINDOW(toplevel), TRUE);
+	}
 }
 
 
@@ -534,13 +540,13 @@ G_MODULE_EXPORT void dash_shape_combine(GtkWidget *dash, gboolean hide_resizers)
 	gint radius = 0;
 	guint i = 0;
 	GList *children = NULL;
-	GdkBitmap *bitmap = NULL;
+	// GdkBitmap *bitmap = NULL;  // GTK4: Deprecated - shape management needs modern approach
 	GtkRequisition req;
 	GtkAllocation alloc;
 	gint width = 0;
 	gint height = 0;
 	GMutex *dash_mutex = (GMutex *)DATA_GET(global_data,"dash_mutex");
-	GdkWindow *window = NULL;
+	// GdkWindow *window = NULL;  // GTK4: GdkWindow deprecated
 	
 	ENTER();
 
@@ -550,6 +556,8 @@ G_MODULE_EXPORT void dash_shape_combine(GtkWidget *dash, gboolean hide_resizers)
 		return;
 	g_mutex_lock(dash_mutex);
 
+	/* GTK4: Window shape management deprecated - commenting out for now */
+	/*
 	window = gtk_widget_get_window(dash);
 	gtk_window_get_size(GTK_WINDOW(gtk_widget_get_toplevel(dash)),&width,&height);
 	bitmap = gdk_pixmap_new(NULL,width,height,1);
@@ -558,6 +566,11 @@ G_MODULE_EXPORT void dash_shape_combine(GtkWidget *dash, gboolean hide_resizers)
 	cairo_paint(cr);
 	cairo_set_operator(cr,CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_rgb(cr, 1.0,1.0,1.0);
+	*/
+	
+	gtk_window_get_size(GTK_WINDOW(gtk_widget_get_toplevel(dash)),&width,&height);
+	
+	/* GTK4: Skip window shape management for now */
 	if (hide_resizers == FALSE)
 	{
 		cairo_rectangle(cr,0,0,16,3);
@@ -856,9 +869,9 @@ G_MODULE_EXPORT gboolean dash_popup_menu_handler(GtkWidget *widget)
 /*!
   \brief Pops up the menu for the dashboard when right clicked upon the dash
   \param widget is the pointer to dashboard window
-  \param event is the pointer to a GdkEventButton structure
+  \param event is the pointer to button press event (GTK4: modernized)
   */
-G_MODULE_EXPORT void dash_context_popup(GtkWidget *widget, GdkEventButton *event)
+G_MODULE_EXPORT void dash_context_popup(GtkWidget *widget, gpointer event)
 {
 	static GtkWidget *menu = NULL;
 	GtkWidget *item = NULL;
@@ -960,8 +973,9 @@ G_MODULE_EXPORT void dash_context_popup(GtkWidget *widget, GdkEventButton *event
 
 	if (event)
 	{
-		button = event->button;
-		event_time = event->time;
+		/* GTK4: Event details would come from gesture controller */
+		button = 3;  // Assume right-click for context menu
+		event_time = gtk_get_current_event_time();
 	}
 	else
 	{
@@ -970,8 +984,8 @@ G_MODULE_EXPORT void dash_context_popup(GtkWidget *widget, GdkEventButton *event
 	}
 
 	gtk_menu_attach_to_widget (GTK_MENU (menu), widget, NULL);
-	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, 
-			button, event_time);
+	/* GTK4: gtk_menu_popup is deprecated, use gtk_popover for modern approach */
+	gtk_menu_popup_at_widget(GTK_MENU(menu), widget, GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
 	gtk_widget_show(menu);  // GTK4: replace gtk_widget_show_all
 	EXIT();
 	return;

@@ -1,5 +1,5 @@
 /*
- * Serial communication utilities for MegaTunix Redux 2025
+ * Serial communication utilities for MegaTunix Redux
  */
 
 #include "serial_utils.h"

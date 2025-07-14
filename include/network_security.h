@@ -9,7 +9,7 @@
 
 G_BEGIN_DECLS
 
-/* Network Security and Multi-User Support for MegaTunix Redux 2025 */
+/* Network Security and Multi-User Support for MegaTunix Redux */
 
 /* User roles and permissions */
 typedef enum {

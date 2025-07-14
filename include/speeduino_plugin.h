@@ -1,5 +1,5 @@
 /*
- * Speeduino Protocol Plugin Header for MegaTunix Redux 2025
+ * Speeduino Protocol Plugin Header for MegaTunix Redux
  */
 
 #ifndef SPEEDUINO_PLUGIN_H

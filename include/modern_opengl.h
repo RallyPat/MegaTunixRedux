@@ -8,7 +8,7 @@
 
 G_BEGIN_DECLS
 
-/* Modern OpenGL context and rendering for MegaTunix Redux 2025 */
+/* Modern OpenGL context and rendering for MegaTunix Redux */
 
 /* OpenGL Context Types */
 typedef enum {
