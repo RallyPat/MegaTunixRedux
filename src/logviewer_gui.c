@@ -20,7 +20,6 @@
 
 #include <debugging.h>
 #include <getfiles.h>
-#include <glade/glade.h>
 #include <listmgmt.h>
 #include <logviewer_events.h>
 #include <logviewer_gui.h>

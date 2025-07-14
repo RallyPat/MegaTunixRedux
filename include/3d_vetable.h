@@ -34,8 +34,9 @@ extern "C" {
 #define __3D_VETABLE_H__
 
 #include <enums.h>
-#include <glade/glade.h>
+/*#include <glade/glade.h>  // Removed: Using gtk_compat.h instead */
 #include <gtk/gtk.h>
+#include <gtk_compat.h>
 #include <multi_expr_loader.h>
 
 /* GL includes */

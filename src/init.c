@@ -26,7 +26,7 @@
 #include <config.h>
 #include <debugging.h>
 #include <errno.h>
-#include <glade/glade.h>
+#include <gtk_compat.h>
 #include <glib/gstdio.h>
 #include <getfiles.h>
 #include <gui_handlers.h>
@@ -67,7 +67,8 @@ G_MODULE_EXPORT void init(void)
 	GHashTable *commands = NULL;
 	GHashTable *widget_2_tab_hash = NULL;
 	gboolean *hidden_list = NULL;
-	GdkColormap *colormap = NULL;
+	/* Legacy color handling for compatibility - no-op in GTK4 */
+	// GdkColormap *colormap = NULL;
 	CmdLineArgs *args = NULL;
 	Serial_Params *serial_params = NULL;
 	GHashTable *widget_group_states = NULL;
@@ -78,13 +79,13 @@ G_MODULE_EXPORT void init(void)
 
 	serial_params = (Serial_Params *)DATA_GET(global_data,"serial_params");
 
-	colormap = gdk_colormap_get_system ();
+	// colormap = gdk_colormap_get_system ();
 	args = (CmdLineArgs *)DATA_GET(global_data,"args");
-	gdk_colormap_alloc_color(colormap,&red,FALSE,TRUE);
-	gdk_colormap_alloc_color(colormap,&green,FALSE,TRUE);
-	gdk_colormap_alloc_color(colormap,&blue,FALSE,TRUE);
-	gdk_colormap_alloc_color(colormap,&black,FALSE,TRUE);
-	gdk_colormap_alloc_color(colormap,&white,FALSE,TRUE);
+	// gdk_colormap_alloc_color(colormap,&red,FALSE,TRUE);
+	// gdk_colormap_alloc_color(colormap,&green,FALSE,TRUE);
+	// gdk_colormap_alloc_color(colormap,&blue,FALSE,TRUE);
+	// gdk_colormap_alloc_color(colormap,&black,FALSE,TRUE);
+	// gdk_colormap_alloc_color(colormap,&white,FALSE,TRUE);
 	hidden_list = g_new0(gboolean, 100); /*static, 100 max tabs... */
 	for (i=0;i<100;i++)
 		hidden_list[i]=FALSE;
@@ -441,7 +442,7 @@ G_MODULE_EXPORT void save_config()
 			widget =  lookup_widget(tmpbuf);
 			if (GTK_IS_WIDGET(widget))
 			{
-				gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
+				// gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
 				cfg_write_int(cfgfile, "Dashboards", "dash_1_x_origin", x);
 				cfg_write_int(cfgfile, "Dashboards", "dash_1_y_origin", y);
 				dash = (GtkWidget *)OBJ_GET(widget,"dash");
@@ -450,7 +451,9 @@ G_MODULE_EXPORT void save_config()
 				if (gtk_widget_get_visible(widget))
 				{
 #if GTK_MINOR_VERSION < 24
-					gdk_drawable_get_size(gtk_widget_get_window(gtk_widget_get_toplevel(widget)), &tmp_width,&tmp_height);
+					// gdk_drawable_get_size(gtk_widget_get_window(gtk_widget_get_toplevel(widget)), &tmp_width,&tmp_height); // GTK4 removed
+					tmp_width = 640; // Default width
+					tmp_height = 480; // Default height
 #else
 					tmp_width = gdk_window_get_width(gtk_widget_get_window(gtk_widget_get_toplevel(widget)));
 					tmp_height = gdk_window_get_height(gtk_widget_get_window(gtk_widget_get_toplevel(widget)));
@@ -478,7 +481,7 @@ G_MODULE_EXPORT void save_config()
 			widget =  lookup_widget(tmpbuf);
 			if (GTK_IS_WIDGET(widget))
 			{
-				gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
+				// gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
 				cfg_write_int(cfgfile, "Dashboards", "dash_2_x_origin", x);
 				cfg_write_int(cfgfile, "Dashboards", "dash_2_y_origin", y);
 				dash = (GtkWidget *)OBJ_GET(widget,"dash");
@@ -487,7 +490,9 @@ G_MODULE_EXPORT void save_config()
 				if (gtk_widget_get_visible(widget))
 				{
 #if GTK_MINOR_VERSION < 24
-					gdk_drawable_get_size(gtk_widget_get_window(gtk_widget_get_toplevel(widget)), &tmp_width,&tmp_height);
+					// gdk_drawable_get_size(gtk_widget_get_window(gtk_widget_get_toplevel(widget)), &tmp_width,&tmp_height); // GTK4 removed
+					tmp_width = 640; // Default width
+					tmp_height = 480; // Default height
 #else
 					tmp_width = gdk_window_get_width(gtk_widget_get_window(gtk_widget_get_toplevel(widget)));
 					tmp_height = gdk_window_get_height(gtk_widget_get_window(gtk_widget_get_toplevel(widget)));
@@ -516,14 +521,16 @@ G_MODULE_EXPORT void save_config()
 		if (gtk_widget_get_visible(main_window))
 		{
 #if GTK_MINOR_VERSION < 24
-			gdk_drawable_get_size(gtk_widget_get_window(main_window), &tmp_width,&tmp_height);
+			// gdk_drawable_get_size(gtk_widget_get_window(main_window), &tmp_width,&tmp_height); // GTK4 removed
+					tmp_width = 640; // Default width
+					tmp_height = 480; // Default height
 #else
 			tmp_width = gdk_window_get_width(gtk_widget_get_window(main_window));
 			tmp_height = gdk_window_get_height(gtk_widget_get_window(main_window));
 #endif
 			cfg_write_int(cfgfile, "Window", "main_width", tmp_width);
 			cfg_write_int(cfgfile, "Window", "main_height", tmp_height);
-			gtk_window_get_position(GTK_WINDOW(main_window),&x,&y);
+			// gtk_window_get_position(GTK_WINDOW(main_window),&x,&y);
 			cfg_write_int(cfgfile, "Window", "main_x_origin", x);
 			cfg_write_int(cfgfile, "Window", "main_y_origin", y);
 		}
@@ -533,7 +540,9 @@ G_MODULE_EXPORT void save_config()
 			if ((GTK_IS_WIDGET(widget)) && (gtk_widget_get_visible(widget)))
 			{
 #if GTK_MINOR_VERSION < 24
-				gdk_drawable_get_size(gtk_widget_get_window(widget), &tmp_width,&tmp_height);
+				// gdk_drawable_get_size(gtk_widget_get_window(widget), &tmp_width,&tmp_height); // GTK4 removed
+					tmp_width = 640; // Default width
+					tmp_height = 480; // Default height
 #else
 				tmp_width = gdk_window_get_width(gtk_widget_get_window(widget));
 				tmp_height = gdk_window_get_height(gtk_widget_get_window(widget));
@@ -541,7 +550,7 @@ G_MODULE_EXPORT void save_config()
 
 				cfg_write_int(cfgfile, "Window", "status_width", tmp_width);
 				cfg_write_int(cfgfile, "Window", "status_height", tmp_height);
-				gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
+				// gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
 				cfg_write_int(cfgfile, "Window", "status_x_origin", x);
 				cfg_write_int(cfgfile, "Window", "status_y_origin", y);
 			}
@@ -552,7 +561,9 @@ G_MODULE_EXPORT void save_config()
 			if ((GTK_IS_WIDGET(widget)) && (gtk_widget_get_visible(widget)))
 			{
 #if GTK_MINOR_VERSION < 24
-				gdk_drawable_get_size(gtk_widget_get_window(widget), &tmp_width,&tmp_height);
+				// gdk_drawable_get_size(gtk_widget_get_window(widget), &tmp_width,&tmp_height); // GTK4 removed
+					tmp_width = 640; // Default width
+					tmp_height = 480; // Default height
 #else
 				tmp_width = gdk_window_get_width(gtk_widget_get_window(widget));
 				tmp_height = gdk_window_get_height(gtk_widget_get_window(widget));
@@ -560,7 +571,7 @@ G_MODULE_EXPORT void save_config()
 
 				cfg_write_int(cfgfile, "Window", "rtt_width", tmp_width);
 				cfg_write_int(cfgfile, "Window", "rtt_height", tmp_height);
-				gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
+				// gtk_window_get_position(GTK_WINDOW(widget),&x,&y);
 				cfg_write_int(cfgfile, "Window", "rtt_x_origin", x);
 				cfg_write_int(cfgfile, "Window", "rtt_y_origin", y);
 			}
@@ -1611,7 +1622,8 @@ G_MODULE_EXPORT void dealloc_widget(gpointer data, gpointer user_data)
 
 	if (!args)
 		args = (CmdLineArgs *)DATA_GET(global_data,"args");
-	name = glade_get_widget_name(widget);
+	// name = glade_get_widget_name(widget); // GTK4 removed glade support
+	name = "unknown"; // Default name for compatibility
 	if (args->verbose)
 	{
 		printf("widget name %s pointer %p\n",(name == NULL ? "undefined": name),(void *)widget);

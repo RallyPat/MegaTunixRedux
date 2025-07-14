@@ -22,7 +22,6 @@
 #include <api-versions.h>
 #include <debugging.h>
 #include <getfiles.h>
-#include <glade/glade.h>
 #include <gui_handlers.h>
 #include <listmgmt.h>
 #include <notifications.h>

@@ -26,13 +26,18 @@ extern "C" {
 #define __CORE_GUI_H__
 
 #include <gtk/gtk.h>
-#include <glade/glade.h>
 
 /* Prototypes */
-void finalize_core_gui(GladeXML *);
+void finalize_core_gui(GtkBuilder *);
 void set_connected_icons_state(gboolean);
-gint setup_gui(void);
+gint setup_gui(GtkApplication *app);
 void setup_main_status(GtkWidget *);
+
+/* Signal handlers */
+void on_connect_clicked(GtkButton *button, gpointer user_data);
+void on_disconnect_clicked(GtkButton *button, gpointer user_data);
+void on_settings_clicked(GtkButton *button, gpointer user_data);
+void on_interrogate_clicked(GtkButton *button, gpointer user_data);
 
 /* Prototypes */
 

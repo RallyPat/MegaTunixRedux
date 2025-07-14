@@ -248,7 +248,7 @@ G_MODULE_EXPORT gboolean about_popup(GtkWidget *UNUSED(widget), gpointer UNUSED(
 				"copyright","David J. Andruczyk(2011)",
 				"comments","MTXloader is a Graphical Firmware Loader designed to make it easy and (hopefully) intuitive to upgrade the firmware on your MegaSquirt I,II, LibreEMS or FreeEMS powered vehicle. This tool is capable of loading any firmware version for both series of ECUs.  This code is loosely based upon code provided by James Murray, Ken Culver from the MS2-Extra project.  Please send suggestions to the author for ways to improve mtxloader.",
 				"license","GPL v2",
-				"website","http://megatunix.sourceforge.net",
+				"website","https://github.com/RallyPat/MegaTunixRedux",
 				"authors",authors,
 				"artists",artists,
 				"documenters",authors,

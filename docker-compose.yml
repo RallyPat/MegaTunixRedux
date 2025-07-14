@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  megatunix-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: developer
+        USER_UID: 1000
+        USER_GID: 1000
+    container_name: megatunix-dev
+    volumes:
+      - .:/workspace:cached
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - XDG_RUNTIME_DIR=/tmp/runtime-developer
+    network_mode: host
+    stdin_open: true
+    tty: true
+    
+  # Build service for CI
+  megatunix-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: megatunix-build
+    volumes:
+      - .:/workspace:cached
+    working_dir: /workspace
+    command: >
+      bash -c "
+        meson setup builddir --buildtype=release &&
+        meson compile -C builddir &&
+        meson test -C builddir
+      "
+      
+  # Static analysis service
+  megatunix-analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: megatunix-analysis
+    volumes:
+      - .:/workspace:cached
+    working_dir: /workspace
+    command: >
+      bash -c "
+        cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src/ include/ &&
+        find src include -name '*.c' -o -name '*.h' | xargs clang-format --dry-run --Werror
+      "

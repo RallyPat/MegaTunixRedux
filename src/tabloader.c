@@ -31,8 +31,8 @@
 #include <enums.h>
 #include <firmware.h>
 #include <getfiles.h>
-#include <glade/glade.h>
-#include <glade/glade-parser.h>
+//#include <glade/glade-parser.h>  // Disabled for GTK4 - replaced with GtkBuilder
+#include <gtk/gtk.h>  // GTK4 Builder support
 #include <gui_handlers.h>
 #include <init.h>
 #include <keybinder.h>
@@ -49,7 +49,8 @@
 #include <widgetmgmt.h>
 
 extern gconstpointer *global_data;
-gboolean descend_tree(GladeWidgetInfo *info, ConfigFile *);
+// Forward declarations updated for GTK4
+gboolean descend_tree_stub(void *info, ConfigFile *cfgfile);  // Stub for now
 
 /*!
   \brief load_gui_tabs_pf() is called after interrogation completes 
@@ -237,7 +238,9 @@ G_MODULE_EXPORT gboolean load_actual_tab(GtkNotebook *notebook, gint page)
 	gchar * map_file = NULL;
 	gchar * glade_file = NULL;
 	gchar * tmpbuf = NULL;
-	GladeXML *xml = NULL;
+	// GTK4 Builder migration - replace libglade with GtkBuilder
+	GtkBuilder *builder = NULL;
+	GError *error = NULL;
 	GtkWidget *label = NULL;
 	GtkWidget *topframe = NULL;
 	GtkWidget *placeholder = NULL;
@@ -252,8 +255,21 @@ G_MODULE_EXPORT gboolean load_actual_tab(GtkNotebook *notebook, gint page)
 
 	glade_file = (gchar *)OBJ_GET(label,"glade_file");
 	map_file = (gchar *)OBJ_GET(label,"datamap_file");
-	xml = glade_xml_new(glade_file,"topframe",NULL);
-	g_return_val_if_fail(xml,FALSE);
+	// GTK4 Builder - load UI file
+	builder = gtk_builder_new();
+	if (!gtk_builder_add_from_file(builder, glade_file, &error)) {
+		g_warning("Failed to load UI file %s: %s", glade_file, error->message);
+		g_error_free(error);
+		g_object_unref(builder);
+		EXIT();
+		return FALSE;
+	}
+	// GTK4 Builder - validate builder loaded successfully
+	if (!builder) {
+		g_warning("Failed to create builder for UI file %s", glade_file);
+		EXIT();
+		return FALSE;
+	}
 	thread_update_logbar("interr_view",NULL,g_strdup(_("Load of tab: ")),FALSE,FALSE);
 	thread_update_logbar("interr_view","info", g_strdup_printf("\"%s\"",glade_file),FALSE,FALSE);
 	thread_update_logbar("interr_view",NULL,g_strdup(_(" completed.\n")),FALSE,FALSE);
@@ -262,15 +278,16 @@ G_MODULE_EXPORT gboolean load_actual_tab(GtkNotebook *notebook, gint page)
 	cfgfile = cfg_open_file(map_file);
 	if (cfgfile)
 	{
-		topframe = glade_xml_get_widget(xml,"topframe");
+		topframe = GTK_WIDGET(gtk_builder_get_object(builder, "topframe"));
 		if (topframe == NULL)
 		{
-			MTXDBG(TABLOADER|CRITICAL,_("\"topframe\" not found in xml, ABORTING!!\n"));
+			MTXDBG(TABLOADER|CRITICAL,_("\"topframe\" not found in builder, ABORTING!!\n"));
 			set_title(g_strdup(_("ERROR Gui Tab XML problem, \"topframe\" element not found!!!")));
+			g_object_unref(builder);
 			EXIT();
 			return FALSE;
 		}
-		OBJ_SET_FULL(topframe,"glade_xml",(gpointer)xml,g_object_unref);
+		OBJ_SET_FULL(topframe,"glade_builder",(gpointer)builder,g_object_unref);  // Store builder instead of xml
 		// bind_data() is recursive and will take 
 		// care of all children
 
@@ -295,7 +312,9 @@ G_MODULE_EXPORT gboolean load_actual_tab(GtkNotebook *notebook, gint page)
 
 		gtk_box_pack_start(GTK_BOX(placeholder),topframe,TRUE,TRUE,0);
 		OBJ_SET(placeholder,"topframe",topframe);
-		glade_xml_signal_autoconnect(xml);
+		// GTK4 Builder - Connect signals (manual connection for now)
+		// Note: In GTK4, signals are typically connected during UI setup
+		// or through callback functions. For now, we'll skip auto-connection.
 		g_free(bindgroup);
 		if (cfg_read_string(cfgfile,"global","post_functions",&tmpbuf))
 		{
@@ -399,7 +418,8 @@ G_MODULE_EXPORT GHashTable * load_groups(ConfigFile *cfgfile)
 			continue;
 		}
 
-		group->object = (GObject *)g_object_new(GTK_TYPE_INVISIBLE,NULL);
+		// GTK4 - Use GObject instead of GTK_TYPE_INVISIBLE (removed in GTK4)
+		group->object = g_object_new(G_TYPE_OBJECT, NULL);
 		g_object_ref_sink(group->object);
 
 		/* If this widget has a "depend_on" tag we need to 
@@ -633,8 +653,14 @@ G_MODULE_EXPORT void bind_data(GtkWidget *widget, gpointer user_data)
 	}
 
 	if (GTK_IS_WIDGET(widget))
-		if (GTK_IS_CONTAINER(widget))
-			gtk_container_foreach(GTK_CONTAINER(widget),bind_data,user_data);
+	{
+		// GTK4 - Use widget traversal for containers
+		GtkWidget *child = gtk_widget_get_first_child(widget);
+		while (child) {
+			bind_data(child, user_data);
+			child = gtk_widget_get_next_sibling(child);
+		}
+	}
 	name = gtk_widget_get_name(widget);
 	if (!name)
 	{
@@ -1013,11 +1039,10 @@ gboolean preload_deps(gpointer data)
 	Firmware_Details *firmware = NULL;
 	GPtrArray *array = (GPtrArray *)data;
 	TabInfo *tabinfo = NULL;
-	GladeInterface *iface = NULL;
-	GladeWidgetInfo *info = NULL;
+	// GTK4 - Stub out libglade dependency parsing for now
+	// TODO: Implement proper GTK4 Builder-based dependency parsing
 	ConfigFile *cfgfile = NULL;
 	guint i = 0;	
-	guint j = 0;	
 
 	ENTER();
 	firmware = (Firmware_Details *)DATA_GET(global_data,"firmware");
@@ -1026,16 +1051,10 @@ gboolean preload_deps(gpointer data)
 	for (i=0;i<array->len;i++)
 	{
 		tabinfo = (TabInfo *)g_ptr_array_index(array,i);
-		iface = glade_parser_parse_file(tabinfo->glade_file,NULL);
 		cfgfile = cfg_open_file(tabinfo->datamap_file);
-		if ((!cfgfile) || (!iface))
+		if (!cfgfile)
 			continue;
-		for(j=0;j<iface->n_toplevels;j++)
-		{
-			info = iface->toplevels[j];
-			descend_tree(info,cfgfile);
-		}
-		glade_interface_destroy(iface);
+		// GTK4 TODO: Parse builder UI files for dependencies
 		cfg_free(cfgfile);
 	}
 	io_cmd(firmware->get_all_command,NULL);
@@ -1045,197 +1064,20 @@ gboolean preload_deps(gpointer data)
 
 
 /*!
-  \brief descends into a GladeWidgetInfo tree looking for special case 
-  widgets to handle
-  \param info is the pointer to a GladeWidgetInfo structure
+  \brief descends into a widget tree looking for special case widgets to handle
+  \param info is the pointer to a widget info structure (stubbed for GTK4)
   \param cfgfile is the pointer to the corresponding datamap file
   \returns TRUE, unless eat end of the tree
   */
-gboolean descend_tree(GladeWidgetInfo *info,ConfigFile *cfgfile)
+gboolean descend_tree_stub(void *info, ConfigFile *cfgfile)
 {
-	static GHashTable *widget_2_tab_hash = NULL;
-	static ConfigFile *last_cfgfile = NULL;
-	static gchar * prefix = NULL;
-	gchar *groups = NULL;
-	gchar *bitvals = NULL;
-	gchar *source_key = NULL;
-	gchar *source_values = NULL;
-	gint bitval = 0;
-	gint bitmask = 0;
-	gint offset = 0;
-	gint page = 0;
-	/*gint canID = 0;*/
-	DataSize size = MTX_U08;
-	GObject *object = NULL;
-	GList *list = NULL;
-	guint i = 0;
-
+	// GTK4 - Stub implementation for libglade replacement
+	// TODO: Implement proper GTK4 Builder-based widget tree traversal
 	ENTER();
-	if (!widget_2_tab_hash)
-	{
-		widget_2_tab_hash = (GHashTable *)DATA_GET(global_data,"widget_2_tab_hash");
-		g_return_val_if_fail(widget_2_tab_hash,FALSE);
-	}
-	/*
-	   if (!info->parent)
-	   printf("%s is a TOPLEVEL\n",info->name);
-	   else if (info->n_children == 0)
-	   {
-	   printf("%s is a BOTTOM WIDGET\n",info->name);
-	   EXIT();
-	   return FALSE;
-	   }
-	   else
-	   printf("%s\n",info->name);
-
-	   printf("widget %s has %i children\n",info->name,info->n_children);
-	 */
-	for (i=0;i<info->n_children;i++)
-		descend_tree(info->children[i].child,cfgfile);
-
-	if (last_cfgfile != cfgfile)
-	{
-		if (prefix)
-			cleanup(prefix);
-		if(!cfg_read_string(cfgfile,"global","id_prefix", &prefix))
-			prefix = NULL;
-		last_cfgfile = cfgfile;
-	}
-	if (cfg_find_section(cfgfile,info->name)) // This widget exists 
-	{
-		if (prefix)
-			g_hash_table_insert(widget_2_tab_hash,g_strdup_printf("%s%s",prefix,info->name),g_strdup(cfgfile->filename));
-		else
-			g_hash_table_insert(widget_2_tab_hash,g_strdup(info->name),g_strdup(cfgfile->filename));
-	}
-
-	if (cfg_read_string(cfgfile,info->name,"source_values",&source_values))
-	{
-		if (!cfg_read_string(cfgfile,info->name,"source_key",&source_key))
-		{
-			MTXDBG(TABLOADER|CRITICAL,_("%s needs source_key\n"),info->name);
-			EXIT();
-			return TRUE;
-		}
-		if (!cfg_read_int(cfgfile,info->name,"offset",&offset))
-		{
-			MTXDBG(TABLOADER|CRITICAL,_("%s needs offset\n"),info->name);
-			EXIT();
-			return TRUE;
-		}
-		if (!cfg_read_int(cfgfile,info->name,"bitmask",&bitmask))
-		{
-			MTXDBG(TABLOADER|CRITICAL,_("%s needs bitmask\n"),info->name);
-			EXIT();
-			return TRUE;
-		}
-		if (!cfg_read_string(cfgfile,info->name,"bitvals",&bitvals))
-		{
-			if (!cfg_read_int(cfgfile,info->name,"bitval",&bitval))
-			{
-				MTXDBG(TABLOADER|CRITICAL,_("%s needs bitvals or bitval\n"),info->name);
-				EXIT();
-				return TRUE;
-			}
-		}
-		if (!cfg_read_int(cfgfile,info->name,"page",&page))
-		{
-			if (!cfg_read_int(cfgfile,"defaults","page",&page))
-			{
-				MTXDBG(TABLOADER|CRITICAL,_("%s has no page defined!\n"),info->name);
-				EXIT();
-				return TRUE;
-			}
-		}
-		object = (GObject *)g_object_new(GTK_TYPE_INVISIBLE,NULL);
-		g_object_ref_sink(object);
-		/*OBJ_SET(object,"canID",GINT_TO_POINTER(canID));*/
-		OBJ_SET(object,"page",GINT_TO_POINTER(page));
-		OBJ_SET(object,"offset",GINT_TO_POINTER(offset));
-		OBJ_SET(object,"size",GINT_TO_POINTER(size));
-		OBJ_SET(object,"bitmask",GINT_TO_POINTER(bitmask));
-		if (bitvals)
-			OBJ_SET_FULL(object,"bitvals",g_strdup(bitvals),g_free);
-		else
-			OBJ_SET(object,"bitval",GINT_TO_POINTER(bitval));
-		OBJ_SET_FULL(object,"source_key",g_strdup(source_key),g_free);
-		OBJ_SET_FULL(object,"source_values",g_strdup(source_values),g_free);
-		list = (GList *)DATA_GET(global_data,"source_list");
-		list = g_list_prepend(list,object);
-		DATA_SET(global_data,"source_list",(gpointer)list);
-		cleanup(groups);
-		cleanup(bitvals);
-		cleanup(source_key);
-		cleanup(source_values);
-
-	}
-	if (cfg_read_string(cfgfile,info->name,"toggle_groups",&groups))
-	{
-		if (!cfg_read_int(cfgfile,info->name,"offset",&offset))
-		{
-			MTXDBG(TABLOADER|CRITICAL,_("%s needs offset\n"),info->name);
-			EXIT();
-			return TRUE;
-		}
-		if (!cfg_read_int(cfgfile,info->name,"bitmask",&bitmask))
-		{
-			MTXDBG(TABLOADER|CRITICAL,_("%s needs bitmask\n"),info->name);
-			EXIT();
-			return TRUE;
-		}
-		if (!cfg_read_string(cfgfile,info->name,"bitvals",&bitvals))
-		{
-			if (!cfg_read_int(cfgfile,info->name,"bitval",&bitval))
-			{
-				MTXDBG(TABLOADER|CRITICAL,_("%s needs bitvals or bitval\n"),info->name);
-				EXIT();
-				return TRUE;
-			}
-		}
-		if (!cfg_read_int(cfgfile,info->name,"page",&page))
-		{
-			if (!cfg_read_int(cfgfile,"defaults","page",&page))
-			{
-				MTXDBG(TABLOADER|CRITICAL,_("%s has no page defined!\n"),info->name);
-				EXIT();
-				return TRUE;
-			}
-		}
-		/*
-		   if (!cfg_read_int(cfgfile,info->name,"canID",&canID))
-		   {
-		   if (!cfg_read_int(cfgfile,"defaults","canID",&canID))
-		   {
-		   printf("%s has no canID defined!\n",info->name);
-		   EXIT();
-		   return TRUE;
-		   }
-		   }
-		 */
-		object = (GObject *)g_object_new(GTK_TYPE_INVISIBLE,NULL);
-		g_object_ref_sink(object);
-		/*OBJ_SET(object,"canID",GINT_TO_POINTER(canID));*/
-		OBJ_SET(object,"page",GINT_TO_POINTER(page));
-		OBJ_SET(object,"offset",GINT_TO_POINTER(offset));
-		OBJ_SET(object,"size",GINT_TO_POINTER(size));
-		OBJ_SET(object,"bitmask",GINT_TO_POINTER(bitmask));
-		if (bitvals)
-			OBJ_SET_FULL(object,"bitvals",g_strdup(bitvals),g_free);
-		else
-			OBJ_SET(object,"bitval",GINT_TO_POINTER(bitval));
-		OBJ_SET_FULL(object,"toggle_groups",g_strdup(groups),g_free);
-		list = (GList *)DATA_GET(global_data,"toggle_group_list");
-		list = g_list_prepend(list,object);
-		DATA_SET(global_data,"toggle_group_list",(gpointer)list);
-		cleanup(groups);
-		cleanup(bitvals);
-		cleanup(source_key);
-		cleanup(source_values);
-	}
+	g_debug("descend_tree_stub called - GTK4 migration placeholder");
 	EXIT();
 	return TRUE;
 }
-
 
 /*!
   \brief loads a tab when its clicked upon

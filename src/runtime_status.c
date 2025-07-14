@@ -21,9 +21,10 @@
 
 #include <args.h>
 #include <api-versions.h>
+#include <config.h>
 #include <core_gui.h>
 #include <debugging.h>
-#include <glade/glade-xml.h>
+/*#include <glade/glade-xml.h>  // Removed: Using gtk_compat.h instead */
 #include <getfiles.h>
 #include <gui_handlers.h>
 #include <libxml/parser.h>
@@ -53,11 +54,11 @@ G_MODULE_EXPORT void load_status_pf(void)
 	gint h = 0;
 	GtkWidget * window;
 	GtkWidget * parent;
-	GladeXML *xml = NULL;
+	GtkBuilder *builder = NULL;
 	gboolean xml_result = FALSE;
 	xmlDoc *doc = NULL;
 	xmlNode *root_element = NULL;
-	GladeXML *main_xml;
+	GtkBuilder *main_builder;
 	Firmware_Details *firmware = NULL;
 	gchar *pathstub = NULL;
 	CmdLineArgs *args =  NULL;
@@ -92,9 +93,9 @@ G_MODULE_EXPORT void load_status_pf(void)
 		EXIT();
 		return;
 	}
-	main_xml = (GladeXML *)DATA_GET(global_data,"main_xml");
-	xml = glade_xml_new(main_xml->filename,"status_window",NULL);
-	window = glade_xml_get_widget(xml,"status_window");
+	main_builder = (GtkBuilder *)DATA_GET(global_data,"main_builder");
+	builder = gtk_builder_new_from_file(main_builder ? "status_window.ui" : "status_window.ui");
+	window = GTK_WIDGET(gtk_builder_get_object(builder, "status_window"));
 	register_widget("status_window",window);
 	gtk_window_set_focus_on_map((GtkWindow *)window,FALSE);
 	gtk_window_set_title(GTK_WINDOW(window),_("ECU Status"));
@@ -112,8 +113,8 @@ G_MODULE_EXPORT void load_status_pf(void)
 		*/
 //	gtk_window_resize(GTK_WINDOW(window),w,h);
 //	g_object_set(window, "resizable", FALSE, NULL);
-	parent = glade_xml_get_widget(xml,"status_vbox");
-	glade_xml_signal_autoconnect(xml);
+	parent = GTK_WIDGET(gtk_builder_get_object(builder, "status_vbox"));
+	// GTK4 doesn't have signal autoconnect - signals should be connected manually if needed
 
 	LIBXML_TEST_VERSION
 

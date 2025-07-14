@@ -23,7 +23,6 @@
 #include <debugging.h>
 #include <defines.h>
 #include <enums.h>
-#include <glade/glade.h>
 #include <stdlib.h>
 #include <visibility.h>
 #include <widgetmgmt.h>

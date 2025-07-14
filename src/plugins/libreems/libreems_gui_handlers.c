@@ -28,7 +28,6 @@
 #include <libreems_helpers.h>
 #include <libreems_gui_handlers.h>
 #include <libreems_plugin.h>
-#include <glade/glade.h>
 #include <gtk/gtk.h>
 
 

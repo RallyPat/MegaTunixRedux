@@ -28,6 +28,7 @@ extern "C" {
 #include <defines.h>
 #include <gauge.h>
 #include <gtk/gtk.h>
+#include <gtk_compat.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 

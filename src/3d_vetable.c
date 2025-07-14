@@ -46,7 +46,6 @@
 #include <3d_vetable.h>
 #include <conversions.h>
 #include <dashboard.h>
-#include <glade/glade.h>
 #include <debugging.h>
 //#include <gdk/gdkglglext.h>
 #include <gdk/gdkkeysyms.h>
@@ -75,7 +74,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #endif
-#include <gtkgl/gtkglarea.h>
+#include <gtk/gtk.h> // GL area disabled for now
 
 #define ONE_SECOND 	 1	/* one second */
 #define DEFAULT_WIDTH  640

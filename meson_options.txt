@@ -1,0 +1,35 @@
+option('enable_deprecated', type : 'boolean', value : false,
+       description : 'Enable deprecated functions and APIs')
+
+option('enable_profiling', type : 'boolean', value : false,
+       description : 'Enable profiling with gprof')
+
+option('enable_opengl', type : 'boolean', value : true,
+       description : 'Enable OpenGL support for 3D visualization')
+
+option('enable_network', type : 'boolean', value : false,
+       description : 'Enable network connections by default')
+
+option('gaugedesigner', type : 'boolean', value : false,
+       description : 'Build gauge designer application')
+
+option('dashdesigner', type : 'boolean', value : false,
+       description : 'Build dashboard designer application')
+
+option('msloader', type : 'boolean', value : true,
+       description : 'Build MS loader utility')
+
+option('build_tests', type : 'boolean', value : false,
+       description : 'Build test suite')
+
+option('build_docs', type : 'boolean', value : false,
+       description : 'Build documentation with Doxygen')
+
+# Development options
+option('enable_debugging', type: 'boolean', value: false, description: 'Enable debugging symbols and features')
+option('enable_tests', type: 'boolean', value: true, description: 'Build and run tests')
+option('enable_valgrind', type: 'boolean', value: false, description: 'Enable Valgrind memory testing')
+option('enable_coverage', type: 'boolean', value: false, description: 'Enable code coverage analysis')
+option('enable_benchmarks', type: 'boolean', value: false, description: 'Enable performance benchmarks')
+
+option('build_demos', type: 'boolean', value: false, description: 'Build widget demo programs')

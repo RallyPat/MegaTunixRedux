@@ -24,7 +24,7 @@
 #include <conversions.h>
 #include <debugging.h>
 #include <firmware.h>
-#include <glade/glade.h>
+#include "gtk_compat.h" // Replaced glade include
 #include <gui_handlers.h>
 #include <lookuptables.h>
 #include <math.h>

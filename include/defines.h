@@ -25,7 +25,7 @@ extern "C" {
 #ifndef __DEFINES_H__
 #define __DEFINES_H__
 
-#include <config.h>
+#include "config_compat.h"
 #include <libintl.h>
 #include <math.h>
 

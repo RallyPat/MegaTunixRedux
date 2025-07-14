@@ -25,7 +25,7 @@ extern "C" {
 #ifndef __GETFILES_H__
 #define __GETFILES_H__
 
-#include <gtk/gtk.h>
+#include "gtk_compat.h"
 
 typedef struct _MtxFileIO MtxFileIO;
 
@@ -60,9 +60,7 @@ struct _MtxFileIO
 };
 
 /* Static private functions */
-#if GTK_MINOR_VERSION >= 8
 GtkFileChooserConfirmation confirm_overwrite_callback (GtkFileChooser *, gpointer );
-#endif
 
 /* Prototypes */
 gboolean check_for_files(const gchar *, const gchar *);

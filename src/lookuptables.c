@@ -18,6 +18,7 @@
   \author David Andruczyk
   */
 
+#include <config.h>
 #include <assert.h>
 #include <configfile.h>
 #include <debugging.h>
@@ -617,7 +618,7 @@ G_MODULE_EXPORT gboolean lookuptables_configurator(GtkWidget *widget, gpointer d
 	}
 	else	/* i.e.  NOT created,  build it */
 	{
-		lookuptables_config_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+		lookuptables_config_window = gtk_window_new ();
 		gtk_window_set_title(GTK_WINDOW(lookuptables_config_window),_("MegaTunix LookupTables"));
 		gtk_window_set_default_size(GTK_WINDOW(lookuptables_config_window),300,200);
 		vbox = gtk_vbox_new(FALSE,0);

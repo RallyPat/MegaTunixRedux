@@ -27,10 +27,10 @@
   */
 
 #if HAVE_CONFIG_H
-#include "config.h"
+#include "../include/config_compat.h"
 #endif
 
-#include "gtk/gtk.h"
+#include "../include/gtk_compat.h"
 #include "common.h"
 #include "node.h"
 #include <string.h>

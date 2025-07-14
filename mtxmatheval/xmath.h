@@ -29,14 +29,12 @@
 #ifndef XMATH_H
 #define XMATH_H 1
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "../include/config_compat.h"
 
 #if HAVE_MATH_H
 #include <math.h>
 #else
-#error no <math.h> avaialable
+#error no <math.h> available
 #endif
 
 #ifdef INFINITY

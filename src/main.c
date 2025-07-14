@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2002-2012 by Dave J. Andruczyk <djandruczyk at yahoo dot com>
+ * Modernized for 2025 as MegaTunix Redux
  *
  * Linux Megasquirt tuning software
  * 
@@ -14,7 +15,7 @@
 /*!
   \file src/main.c
   \ingroup CoreMtx
-  \brief The holder of the main() fucntion which gets the ball rolling...
+  \brief The holder of the main() function which gets the ball rolling...
   \author David Andruczyk
   */
 
@@ -29,7 +30,6 @@
 #include <debugging.h>
 #include <dispatcher.h>
 #include <locale.h>
-#include <gtkgl/gtkglarea.h>
 #include <locking.h>
 #include <init.h>
 #include <serialio.h>
@@ -37,9 +37,16 @@
 #include <sleep_calib.h>
 #include <stringmatch.h>
 #include <timeout_handlers.h>
+#include <speeduino_bridge.h>
 
 gboolean gl_ability = FALSE;
 gconstpointer *global_data = NULL;
+
+/* Forward declaration */
+static void activate_app(GtkApplication *app, gpointer user_data);
+
+/* External function declaration */
+extern CmdLineArgs *init_args(void);
 
 /*!
   \brief main() is the typical main function in a C program, it performs
@@ -51,6 +58,44 @@ gconstpointer *global_data = NULL;
   */
 gint main(gint argc, gchar ** argv)
 {
+	setlocale(LC_ALL,"");
+#ifdef __WIN32__
+	bindtextdomain(PACKAGE, "C:\\Program Files\\MegaTunix Redux\\dist\\locale");
+#else
+	bindtextdomain(PACKAGE, LOCALEDIR);
+#endif
+	textdomain (PACKAGE);
+
+#ifdef DEBUG
+	printf("This is a debug release, Git hash: %s\n",GIT_HASH);
+#endif
+	
+	/* Use GtkApplication for GTK4 */
+	GtkApplication *app;
+	app = gtk_application_new("org.megasquirt.megatunix-redux", G_APPLICATION_FLAGS_NONE);
+	g_signal_connect(app, "activate", G_CALLBACK(activate_app), NULL);
+	
+	int status = g_application_run(G_APPLICATION(app), argc, argv);
+	
+	/* Cleanup bridge on exit */
+	speeduino_bridge_shutdown();
+	
+	g_object_unref(app);
+	
+	EXIT();
+	return status;
+}
+
+/*!
+  \brief activate_app() is called when the GtkApplication is activated
+  \param app is the GtkApplication
+  \param user_data is user data
+  */
+static void activate_app(GtkApplication *app, gpointer user_data)
+{
+	g_print("Application activated\n");
+	
+	/* Set up all the initialization that was previously in main() */
 	Serial_Params *serial_params = NULL;
 	GAsyncQueue *queue = NULL;
 	GTimer *timer = NULL;
@@ -61,32 +106,14 @@ gint main(gint argc, gchar ** argv)
 	GMutex *rtv_thread_mutex = NULL;
 	GMutex *serio_mutex = NULL;
 	gint id = 0;
-	setlocale(LC_ALL,"");
-#ifdef __WIN32__
-	bindtextdomain(PACKAGE, "C:\\Program Files\\MegaTunix\\dist\\locale");
-#else
-	bindtextdomain(PACKAGE, LOCALEDIR);
-#endif
-	textdomain (PACKAGE);
-
-#ifdef DEBUG
-	printf("This is a debug release, Git hash: %s\n",GIT_HASH);
-#endif
-	// Not needed?
-//	gdk_threads_init();
-	gtk_init(&argc, &argv);
-	glade_init();
-
-	/* Check if OpenGL is supported. */
+	
+	/* OpenGL support will be handled via modern GTK4 GL context */
 	if (gdk_gl_query() == FALSE) {
 		g_print("OpenGL not supported\n");
-		return 0;
+		return;
 	}
 	else
 		gl_ability = TRUE;
-
-//	gdk_gl_init_check(&argc, &argv);
-//	gl_ability = gtk_gl_init_check(&argc, &argv);
 
 	global_data = g_new0(gconstpointer, 1);
 
@@ -111,16 +138,14 @@ gint main(gint argc, gchar ** argv)
 	g_mutex_init(serio_mutex);
 	DATA_SET(global_data,"serio_mutex",serio_mutex);
 
-	/* For testing if gettext works
-	   printf(_("Hello World!\n"));
-	 */
-
 	/* Build table of strings to enum values */
 	build_string_2_enum_table();
 	serial_params = (Serial_Params *)g_malloc0(sizeof(Serial_Params));
 	DATA_SET(global_data,"serial_params",serial_params);
 
-	handle_args(argc,argv);	/* handle CLI arguments */
+	/* Initialize args structure */
+	CmdLineArgs *args = init_args();
+	DATA_SET(global_data,"args",args);
 
 	/* This will exit mtx if the locking fails! */
 	/* Prevents multiple instances  but stops esoteric usess too 
@@ -142,7 +167,7 @@ gint main(gint argc, gchar ** argv)
 	DATA_SET_FULL(global_data,"io_repair_queue",queue,g_async_queue_unref);
 
 	read_config();
-	setup_gui();		
+	setup_gui(app);		
 
 	gtk_rc_parse_string("style \"override\"\n{\n\tGtkTreeView::horizontal-separator = 0\n\tGtkTreeView::vertical-separator = 0\n}\nwidget_class \"*\" style \"override\"");
 
@@ -159,10 +184,6 @@ gint main(gint argc, gchar ** argv)
 	g_idle_add((GSourceFunc)check_for_first_time,NULL);
 	
 	DATA_SET(global_data,"ready",GINT_TO_POINTER(TRUE));
-
-	gdk_threads_enter();
-	gtk_main();
-	gdk_threads_leave();
-	EXIT();
-	return (0);
+	
+	g_print("Application initialization complete\n");
 }

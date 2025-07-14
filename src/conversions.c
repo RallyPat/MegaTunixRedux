@@ -25,7 +25,6 @@
 #include <assert.h>
 #include <conversions.h>
 #include <debugging.h>
-#include <glade/glade.h>
 #include <gui_handlers.h>
 #include <listmgmt.h>
 #include <lookuptables.h>

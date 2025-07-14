@@ -26,7 +26,7 @@ extern "C" {
 #define __TABLOADER_H__
 
 #include <configfile.h>
-#include <glade/glade-parser.h>
+// #include <glade/glade-parser.h>  // Removed - using GtkBuilder instead
 #include <gtk/gtk.h>
 
 typedef struct _Group Group;

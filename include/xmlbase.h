@@ -26,7 +26,7 @@ extern "C" {
 #define __XMLBASE_H__
 
 #include <defines.h>
-#include <gtk/gtk.h>
+#include "gtk_compat.h"
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 

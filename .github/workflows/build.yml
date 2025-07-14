@@ -1,0 +1,211 @@
+name: Build and Test MegaTunix Redux
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main ]
+  schedule:
+    # Run weekly to catch dependency issues
+    - cron: '0 0 * * 0'
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for git hash
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          meson \
+          ninja-build \
+          pkg-config \
+          libgtk-4-dev \
+          libglib2.0-dev \
+          libxml2-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          flex \
+          bison \
+          gettext \
+          doxygen \
+          valgrind \
+          cppcheck
+          
+    - name: Setup Clang
+      if: matrix.compiler == 'clang'
+      run: |
+        sudo apt-get install -y clang
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
+        
+    - name: Configure Meson
+      run: |
+        meson setup builddir \
+          --buildtype=${{ env.BUILD_TYPE }} \
+          -Denable_deprecated=false \
+          -Dbuild_tests=true \
+          -Dbuild_docs=true
+          
+    - name: Build
+      run: meson compile -C builddir
+      
+    - name: Run static analysis
+      run: |
+        cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src/ include/
+        
+    - name: Run tests
+      if: matrix.compiler == 'gcc'  # Only run tests once
+      run: meson test -C builddir --verbose
+      
+    - name: Memory check with Valgrind
+      if: matrix.compiler == 'gcc' && env.BUILD_TYPE == 'Debug'
+      run: |
+        meson test -C builddir --wrap='valgrind --leak-check=full --error-exitcode=1'
+        
+    - name: Build documentation
+      if: matrix.compiler == 'gcc'
+      run: |
+        cd builddir
+        ninja docs
+        
+    - name: Upload build artifacts
+      if: matrix.compiler == 'gcc'
+      uses: actions/upload-artifact@v4
+      with:
+        name: megatunix-linux-${{ env.BUILD_TYPE }}
+        path: |
+          builddir/src/megatunix
+          builddir/gaugedesigner/gaugedesigner
+          builddir/dashdesigner/dashdesigner
+          
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-pkg-config
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-ninja
+          mingw-w64-x86_64-gtk4
+          mingw-w64-x86_64-libxml2
+          mingw-w64-x86_64-mesa
+          flex
+          bison
+          
+    - name: Build Windows
+      shell: msys2 {0}
+      run: |
+        meson setup builddir --buildtype=${{ env.BUILD_TYPE }}
+        meson compile -C builddir
+        
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: megatunix-windows-${{ env.BUILD_TYPE }}
+        path: |
+          builddir/src/megatunix.exe
+          builddir/gaugedesigner/gaugedesigner.exe
+          builddir/dashdesigner/dashdesigner.exe
+          
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install \
+          meson \
+          ninja \
+          pkg-config \
+          gtk4 \
+          libxml2 \
+          flex \
+          bison \
+          gettext
+          
+    - name: Configure and Build
+      run: |
+        export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
+        meson setup builddir --buildtype=${{ env.BUILD_TYPE }}
+        meson compile -C builddir
+        
+    - name: Upload macOS artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: megatunix-macos-${{ env.BUILD_TYPE }}
+        path: |
+          builddir/src/megatunix
+          builddir/gaugedesigner/gaugedesigner
+          builddir/dashdesigner/dashdesigner
+          
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format cppcheck
+        
+    - name: Check code formatting
+      run: |
+        find src include -name "*.c" -o -name "*.h" | xargs clang-format --dry-run --Werror
+        
+    - name: Static analysis
+      run: |
+        cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src/ include/ 2>&1 | tee cppcheck-results.txt
+        
+    - name: Upload analysis results
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-analysis
+        path: cppcheck-results.txt

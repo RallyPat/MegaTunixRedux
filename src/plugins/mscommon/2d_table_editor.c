@@ -27,7 +27,6 @@
 #include <firmware.h>
 #include <gauge.h>
 #include <getfiles.h>
-#include <glade/glade.h>
 #include <mscommon_plugin.h>
 #include <mscommon_gui_handlers.h>
 #include <stdlib.h>

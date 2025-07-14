@@ -20,7 +20,6 @@
 
 #include <combo_loader.h>
 #include <firmware.h>
-#include <glade/glade.h>
 #include <ms2_gui_handlers.h>
 #include <ms2_plugin.h>
 #include <ms2_tlogger.h>

@@ -22,7 +22,6 @@
 #include <defines.h>
 #include <widgetmgmt.h>
 #include <debugging.h>
-#include <glade/glade.h>
 #include <keyparser.h>
 #include <stringmatch.h>
 #include <tabloader.h>
@@ -52,12 +51,20 @@ G_MODULE_EXPORT void populate_master(GtkWidget *widget, gpointer user_data )
 	 be a clash, and there's no need to store the top frame widget 
 	 anyways...
 	 */
-	if (GTK_IS_CONTAINER(widget))
-		gtk_container_foreach(GTK_CONTAINER(widget),populate_master,user_data);
+	 
+	/* GTK4: Use gtk_widget_get_first_child/gtk_widget_get_next_sibling to iterate children */
+	if (GTK_IS_WIDGET(widget)) {
+		GtkWidget *child = gtk_widget_get_first_child(widget);
+		while (child) {
+			populate_master(child, user_data);
+			child = gtk_widget_get_next_sibling(child);
+		}
+	}
 	if (!cfg_read_string(cfg,"global","id_prefix",&prefix))
 		prefix = g_strdup("");
 
-	name = (char *)glade_get_widget_name(widget);
+	/* GTK4: Use gtk_widget_get_name instead of glade_get_widget_name */
+	name = (char *)gtk_widget_get_name(widget);
 	/*printf("name of widget stored is %s\n",name);*/
 
 	if (name == NULL)

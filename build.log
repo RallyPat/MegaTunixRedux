@@ -1,0 +1,576 @@
+ninja: Entering directory `build'
+[1/26] Generating 'mtxmatheval/libmtxmatheval.a.p/scanner.c'
+FAILED: [code=1] mtxmatheval/libmtxmatheval.a.p/scanner.c 
+/usr/bin/flex -o mtxmatheval/libmtxmatheval.a.p/scanner.c ../mtxmatheval/scanner.l --noyywrap
+/usr/bin/flex: can't open --noyywrap
+m4:stdin:3198: ERROR: end of file in string
+[2/26] Compiling C object src/megatunix-redux.p/plugin_system.c.o
+../src/plugin_system.c: In function ‘mtx_plugin_initialize’:
+../src/plugin_system.c:685:43: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  685 | gboolean mtx_plugin_initialize(MtxPlugin *plugin, MtxPluginContext *context, GError **error)
+      |                                ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c:685:69: warning: unused parameter ‘context’ [-Wunused-parameter]
+  685 | gboolean mtx_plugin_initialize(MtxPlugin *plugin, MtxPluginContext *context, GError **error)
+      |                                                   ~~~~~~~~~~~~~~~~~~^~~~~~~
+../src/plugin_system.c:685:87: warning: unused parameter ‘error’ [-Wunused-parameter]
+  685 | gboolean mtx_plugin_initialize(MtxPlugin *plugin, MtxPluginContext *context, GError **error)
+      |                                                                              ~~~~~~~~~^~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_cleanup’:
+../src/plugin_system.c:691:36: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  691 | void mtx_plugin_cleanup(MtxPlugin *plugin)
+      |                         ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_check_dependencies’:
+../src/plugin_system.c:696:51: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  696 | gboolean mtx_plugin_check_dependencies(MtxPlugin *plugin, MtxPluginManager *manager, GError **error)
+      |                                        ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c:696:77: warning: unused parameter ‘manager’ [-Wunused-parameter]
+  696 | gboolean mtx_plugin_check_dependencies(MtxPlugin *plugin, MtxPluginManager *manager, GError **error)
+      |                                                           ~~~~~~~~~~~~~~~~~~^~~~~~~
+../src/plugin_system.c:696:95: warning: unused parameter ‘error’ [-Wunused-parameter]
+  696 | gboolean mtx_plugin_check_dependencies(MtxPlugin *plugin, MtxPluginManager *manager, GError **error)
+      |                                                                                      ~~~~~~~~~^~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_check_conflicts’:
+../src/plugin_system.c:702:48: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  702 | gboolean mtx_plugin_check_conflicts(MtxPlugin *plugin, MtxPluginManager *manager, GError **error)
+      |                                     ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c:702:74: warning: unused parameter ‘manager’ [-Wunused-parameter]
+  702 | gboolean mtx_plugin_check_conflicts(MtxPlugin *plugin, MtxPluginManager *manager, GError **error)
+      |                                                        ~~~~~~~~~~~~~~~~~~^~~~~~~
+../src/plugin_system.c:702:92: warning: unused parameter ‘error’ [-Wunused-parameter]
+  702 | gboolean mtx_plugin_check_conflicts(MtxPlugin *plugin, MtxPluginManager *manager, GError **error)
+      |                                                                                   ~~~~~~~~~^~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_start’:
+../src/plugin_system.c:708:38: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  708 | gboolean mtx_plugin_start(MtxPlugin *plugin, GError **error)
+      |                           ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c:708:55: warning: unused parameter ‘error’ [-Wunused-parameter]
+  708 | gboolean mtx_plugin_start(MtxPlugin *plugin, GError **error)
+      |                                              ~~~~~~~~~^~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_stop’:
+../src/plugin_system.c:714:33: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  714 | void mtx_plugin_stop(MtxPlugin *plugin)
+      |                      ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_pause’:
+../src/plugin_system.c:719:34: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  719 | void mtx_plugin_pause(MtxPlugin *plugin)
+      |                       ~~~~~~~~~~~^~~~~~
+../src/plugin_system.c: In function ‘mtx_plugin_resume’:
+../src/plugin_system.c:724:35: warning: unused parameter ‘plugin’ [-Wunused-parameter]
+  724 | void mtx_plugin_resume(MtxPlugin *plugin)
+      |                        ~~~~~~~~~~~^~~~~~
+[3/26] Compiling C object src/megatunix-redux.p/network_security.c.o
+../src/network_security.c: In function ‘on_server_incoming_connection’:
+../src/network_security.c:609:23: warning: unused variable ‘server’ [-Wunused-variable]
+  609 |     MtxNetworkServer *server = (MtxNetworkServer *)user_data;
+      |                       ^~~~~~
+../src/network_security.c:604:63: warning: unused parameter ‘service’ [-Wunused-parameter]
+  604 | static gboolean on_server_incoming_connection(GSocketService *service,
+      |                                               ~~~~~~~~~~~~~~~~^~~~~~~
+../src/network_security.c:605:65: warning: unused parameter ‘connection’ [-Wunused-parameter]
+  605 |                                              GSocketConnection *connection,
+      |                                              ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+../src/network_security.c:606:55: warning: unused parameter ‘source_object’ [-Wunused-parameter]
+  606 |                                              GObject *source_object,
+      |                                              ~~~~~~~~~^~~~~~~~~~~~~
+../src/network_security.c: In function ‘mtx_protocol_send_auth_request’:
+../src/network_security.c:659:53: warning: unused parameter ‘session’ [-Wunused-parameter]
+  659 | gboolean mtx_protocol_send_auth_request(MtxSession *session,
+      |                                         ~~~~~~~~~~~~^~~~~~~
+../src/network_security.c:660:53: warning: unused parameter ‘username’ [-Wunused-parameter]
+  660 |                                        const gchar *username,
+      |                                        ~~~~~~~~~~~~~^~~~~~~~
+../src/network_security.c:661:53: warning: unused parameter ‘password’ [-Wunused-parameter]
+  661 |                                        const gchar *password)
+      |                                        ~~~~~~~~~~~~~^~~~~~~~
+../src/network_security.c: In function ‘mtx_protocol_send_auth_response’:
+../src/network_security.c:667:54: warning: unused parameter ‘session’ [-Wunused-parameter]
+  667 | gboolean mtx_protocol_send_auth_response(MtxSession *session,
+      |                                          ~~~~~~~~~~~~^~~~~~~
+../src/network_security.c:668:50: warning: unused parameter ‘success’ [-Wunused-parameter]
+  668 |                                         gboolean success,
+      |                                         ~~~~~~~~~^~~~~~~
+../src/network_security.c:669:54: warning: unused parameter ‘session_token’ [-Wunused-parameter]
+  669 |                                         const gchar *session_token,
+      |                                         ~~~~~~~~~~~~~^~~~~~~~~~~~~
+../src/network_security.c:670:53: warning: unused parameter ‘role’ [-Wunused-parameter]
+  670 |                                         MtxUserRole role)
+      |                                         ~~~~~~~~~~~~^~~~
+../src/network_security.c: In function ‘mtx_protocol_send_realtime_data’:
+../src/network_security.c:676:54: warning: unused parameter ‘session’ [-Wunused-parameter]
+  676 | gboolean mtx_protocol_send_realtime_data(MtxSession *session,
+      |                                          ~~~~~~~~~~~~^~~~~~~
+../src/network_security.c:677:51: warning: unused parameter ‘data’ [-Wunused-parameter]
+  677 |                                         JsonNode *data)
+      |                                         ~~~~~~~~~~^~~~
+../src/network_security.c: In function ‘mtx_protocol_send_tune_change’:
+../src/network_security.c:683:52: warning: unused parameter ‘session’ [-Wunused-parameter]
+  683 | gboolean mtx_protocol_send_tune_change(MtxSession *session,
+      |                                        ~~~~~~~~~~~~^~~~~~~
+../src/network_security.c:684:52: warning: unused parameter ‘parameter’ [-Wunused-parameter]
+  684 |                                       const gchar *parameter,
+      |                                       ~~~~~~~~~~~~~^~~~~~~~~
+../src/network_security.c:685:49: warning: unused parameter ‘value’ [-Wunused-parameter]
+  685 |                                       JsonNode *value)
+      |                                       ~~~~~~~~~~^~~~~
+[4/26] Compiling C object src/megatunix-redux.p/modern_opengl.c.o
+../src/modern_opengl.c: In function ‘mtx_gl_render_table_3d’:
+../src/modern_opengl.c:443:34: warning: unused parameter ‘rows’ [-Wunused-parameter]
+  443 |                            gsize rows,
+      |                            ~~~~~~^~~~
+../src/modern_opengl.c:444:34: warning: unused parameter ‘cols’ [-Wunused-parameter]
+  444 |                            gsize cols)
+      |                            ~~~~~~^~~~
+../src/modern_opengl.c: In function ‘mtx_gl_set_animation_speed’:
+../src/modern_opengl.c:496:48: warning: unused parameter ‘renderer’ [-Wunused-parameter]
+  496 | void mtx_gl_set_animation_speed(MtxGLRenderer *renderer, gfloat speed)
+      |                                 ~~~~~~~~~~~~~~~^~~~~~~~
+../src/modern_opengl.c:496:65: warning: unused parameter ‘speed’ [-Wunused-parameter]
+  496 | void mtx_gl_set_animation_speed(MtxGLRenderer *renderer, gfloat speed)
+      |                                                          ~~~~~~~^~~~~
+../src/modern_opengl.c: In function ‘on_gl_area_unrealize’:
+../src/modern_opengl.c:668:60: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+  668 | static void on_gl_area_unrealize(GtkGLArea *area, gpointer user_data)
+      |                                                   ~~~~~~~~~^~~~~~~~~
+../src/modern_opengl.c: In function ‘on_gl_area_render’:
+../src/modern_opengl.c:682:66: warning: unused parameter ‘context’ [-Wunused-parameter]
+  682 | static gboolean on_gl_area_render(GtkGLArea *area, GdkGLContext *context, gpointer user_data)
+      |                                                    ~~~~~~~~~~~~~~^~~~~~~
+../src/modern_opengl.c:682:84: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+  682 | static gboolean on_gl_area_render(GtkGLArea *area, GdkGLContext *context, gpointer user_data)
+      |                                                                           ~~~~~~~~~^~~~~~~~~
+[5/26] Compiling C object src/megatunix-redux.p/init.c.o
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_dialog_response_compat’:
+../include/gtk_compat.h:157:5: warning: ‘gtk_dialog_response’ is deprecated [-Wdeprecated-declarations]
+  157 |     gtk_dialog_response(dialog, response_id);
+      |     ^~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/deprecated/gtkappchooserdialog.h:32,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:43,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkdialog.h:169:6: note: declared here
+  169 | void gtk_dialog_response           (GtkDialog *dialog,
+      |      ^~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_file_chooser_set_current_folder_string’:
+../include/gtk_compat.h:164:5: warning: ‘gtk_file_chooser_set_current_folder’ is deprecated [-Wdeprecated-declarations]
+  164 |     gtk_file_chooser_set_current_folder(chooser, file, NULL);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:127,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkfilechooser.h:128:22: note: declared here
+  128 | gboolean             gtk_file_chooser_set_current_folder  (GtkFileChooser       *chooser,
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_file_chooser_set_filename_compat’:
+../include/gtk_compat.h:172:5: warning: ‘gtk_file_chooser_set_file’ is deprecated [-Wdeprecated-declarations]
+  172 |     gtk_file_chooser_set_file(chooser, file, NULL);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:127,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkfilechooser.h:122:22: note: declared here
+  122 | gboolean             gtk_file_chooser_set_file            (GtkFileChooser       *chooser,
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_file_chooser_select_filename_compat’:
+../include/gtk_compat.h:179:5: warning: ‘gtk_file_chooser_set_file’ is deprecated [-Wdeprecated-declarations]
+  179 |     gboolean result = gtk_file_chooser_set_file(chooser, file, NULL);
+      |     ^~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:127,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkfilechooser.h:122:22: note: declared here
+  122 | gboolean             gtk_file_chooser_set_file            (GtkFileChooser       *chooser,
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_file_chooser_get_filename_compat’:
+../include/gtk_compat.h:186:5: warning: ‘gtk_file_chooser_get_file’ is deprecated [-Wdeprecated-declarations]
+  186 |     GFile *file = gtk_file_chooser_get_file(chooser);
+      |     ^~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:127,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkfilechooser.h:120:22: note: declared here
+  120 | GFile *              gtk_file_chooser_get_file            (GtkFileChooser       *chooser);
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_widget_modify_base_compat’:
+../include/gtk_compat.h:219:5: warning: ‘gtk_style_context_add_provider’ is deprecated [-Wdeprecated-declarations]
+  219 |     gtk_style_context_add_provider(gtk_widget_get_style_context(widget),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:259,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkstylecontext.h:65:6: note: declared here
+   65 | void gtk_style_context_add_provider    (GtkStyleContext  *context,
+      |      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h:219:5: warning: ‘gtk_widget_get_style_context’ is deprecated [-Wdeprecated-declarations]
+  219 |     gtk_style_context_add_provider(gtk_widget_get_style_context(widget),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtkapplication.h:27,
+                 from /usr/include/gtk-4.0/gtk/gtkwindow.h:33,
+                 from /usr/include/gtk-4.0/gtk/gtkaboutdialog.h:30,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:34,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/gtkwidget.h:710:19: note: declared here
+  710 | GtkStyleContext * gtk_widget_get_style_context (GtkWidget *widget);
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h:206:83: warning: unused parameter ‘state’ [-Wunused-parameter]
+  206 | static inline void gtk_widget_modify_base_compat(GtkWidget *widget, GtkStateFlags state, const GdkColor *color)
+      |                                                                     ~~~~~~~~~~~~~~^~~~~
+../include/gtk_compat.h: In function ‘gtk_widget_modify_fg’:
+../include/gtk_compat.h:240:5: warning: ‘gtk_style_context_add_provider’ is deprecated [-Wdeprecated-declarations]
+  240 |     gtk_style_context_add_provider(gtk_widget_get_style_context(widget),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:259,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkstylecontext.h:65:6: note: declared here
+   65 | void gtk_style_context_add_provider    (GtkStyleContext  *context,
+      |      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h:240:5: warning: ‘gtk_widget_get_style_context’ is deprecated [-Wdeprecated-declarations]
+  240 |     gtk_style_context_add_provider(gtk_widget_get_style_context(widget),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtkapplication.h:27,
+                 from /usr/include/gtk-4.0/gtk/gtkwindow.h:33,
+                 from /usr/include/gtk-4.0/gtk/gtkaboutdialog.h:30,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:34,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/gtkwidget.h:710:19: note: declared here
+  710 | GtkStyleContext * gtk_widget_get_style_context (GtkWidget *widget);
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h:227:74: warning: unused parameter ‘state’ [-Wunused-parameter]
+  227 | static inline void gtk_widget_modify_fg(GtkWidget *widget, GtkStateFlags state, const GdkColor *color)
+      |                                                            ~~~~~~~~~~~~~~^~~~~
+../include/gtk_compat.h: In function ‘gtk_box_pack_start_compat’:
+../include/gtk_compat.h:295:72: warning: unused parameter ‘fill’ [-Wunused-parameter]
+  295 |                                              gboolean expand, gboolean fill, guint padding)
+      |                                                               ~~~~~~~~~^~~~
+../include/gtk_compat.h:295:84: warning: unused parameter ‘padding’ [-Wunused-parameter]
+  295 |                                              gboolean expand, gboolean fill, guint padding)
+      |                                                                              ~~~~~~^~~~~~~
+../include/gtk_compat.h: In function ‘gtk_box_pack_end’:
+../include/gtk_compat.h:304:77: warning: unused parameter ‘expand’ [-Wunused-parameter]
+  304 | static inline void gtk_box_pack_end(GtkBox *box, GtkWidget *child, gboolean expand, gboolean fill, guint padding)
+      |                                                                    ~~~~~~~~~^~~~~~
+../include/gtk_compat.h:304:94: warning: unused parameter ‘fill’ [-Wunused-parameter]
+  304 | static inline void gtk_box_pack_end(GtkBox *box, GtkWidget *child, gboolean expand, gboolean fill, guint padding)
+      |                                                                                     ~~~~~~~~~^~~~
+../include/gtk_compat.h:304:106: warning: unused parameter ‘padding’ [-Wunused-parameter]
+  304 | static inline void gtk_box_pack_end(GtkBox *box, GtkWidget *child, gboolean expand, gboolean fill, guint padding)
+      |                                                                                                    ~~~~~~^~~~~~~
+../include/gtk_compat.h: In function ‘gtk_window_move_compat’:
+../include/gtk_compat.h:351:54: warning: unused parameter ‘window’ [-Wunused-parameter]
+  351 | static inline void gtk_window_move_compat(GtkWindow *window, gint x, gint y)
+      |                                           ~~~~~~~~~~~^~~~~~
+../include/gtk_compat.h:351:67: warning: unused parameter ‘x’ [-Wunused-parameter]
+  351 | static inline void gtk_window_move_compat(GtkWindow *window, gint x, gint y)
+      |                                                              ~~~~~^
+../include/gtk_compat.h:351:75: warning: unused parameter ‘y’ [-Wunused-parameter]
+  351 | static inline void gtk_window_move_compat(GtkWindow *window, gint x, gint y)
+      |                                                                      ~~~~~^
+../include/gtk_compat.h: In function ‘gtk_widget_get_style_compat’:
+../include/gtk_compat.h:362:63: warning: unused parameter ‘widget’ [-Wunused-parameter]
+  362 | static inline gpointer gtk_widget_get_style_compat(GtkWidget *widget)
+      |                                                    ~~~~~~~~~~~^~~~~~
+../include/gtk_compat.h: In function ‘gtk_file_chooser_set_current_name_compat’:
+../include/gtk_compat.h:369:77: warning: unused parameter ‘chooser’ [-Wunused-parameter]
+  369 | static inline void gtk_file_chooser_set_current_name_compat(GtkFileChooser *chooser, const gchar *name)
+      |                                                             ~~~~~~~~~~~~~~~~^~~~~~~
+../include/gtk_compat.h:369:99: warning: unused parameter ‘name’ [-Wunused-parameter]
+  369 | static inline void gtk_file_chooser_set_current_name_compat(GtkFileChooser *chooser, const gchar *name)
+      |                                                                                      ~~~~~~~~~~~~~^~~~
+../include/gtk_compat.h: In function ‘gtk_file_chooser_add_shortcut_folder_compat’:
+../include/gtk_compat.h:377:5: warning: ‘gtk_file_chooser_add_shortcut_folder’ is deprecated [-Wdeprecated-declarations]
+  377 |     gboolean result = gtk_file_chooser_add_shortcut_folder(chooser, file, error);
+      |     ^~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:127,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkfilechooser.h:156:22: note: declared here
+  156 | gboolean             gtk_file_chooser_add_shortcut_folder (GtkFileChooser       *chooser,
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_file_chooser_remove_filter_compat’:
+../include/gtk_compat.h:384:5: warning: ‘gtk_file_chooser_remove_filter’ is deprecated [-Wdeprecated-declarations]
+  384 |     gtk_file_chooser_remove_filter(chooser, filter);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtk.h:127,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkfilechooser.h:140:22: note: declared here
+  140 | void                 gtk_file_chooser_remove_filter       (GtkFileChooser       *chooser,
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_hbox_new’:
+../include/gtk_compat.h:525:48: warning: unused parameter ‘homogeneous’ [-Wunused-parameter]
+  525 | static inline GtkWidget *gtk_hbox_new(gboolean homogeneous, gint spacing)
+      |                                       ~~~~~~~~~^~~~~~~~~~~
+../include/gtk_compat.h: In function ‘gtk_vbox_new’:
+../include/gtk_compat.h:530:48: warning: unused parameter ‘homogeneous’ [-Wunused-parameter]
+  530 | static inline GtkWidget *gtk_vbox_new(gboolean homogeneous, gint spacing)
+      |                                       ~~~~~~~~~^~~~~~~~~~~
+../include/gtk_compat.h: In function ‘gtk_table_new’:
+../include/gtk_compat.h:609:46: warning: unused parameter ‘rows’ [-Wunused-parameter]
+  609 | static inline GtkWidget* gtk_table_new(guint rows, guint columns, gboolean homogeneous)
+      |                                        ~~~~~~^~~~
+../include/gtk_compat.h:609:58: warning: unused parameter ‘columns’ [-Wunused-parameter]
+  609 | static inline GtkWidget* gtk_table_new(guint rows, guint columns, gboolean homogeneous)
+      |                                                    ~~~~~~^~~~~~~
+../include/gtk_compat.h: In function ‘gtk_radio_button_new’:
+../include/gtk_compat.h:716:55: warning: unused parameter ‘group’ [-Wunused-parameter]
+  716 | static inline GtkWidget *gtk_radio_button_new(GSList *group)
+      |                                               ~~~~~~~~^~~~~
+../include/gtk_compat.h: In function ‘gtk_radio_button_new_with_label’:
+../include/gtk_compat.h:721:66: warning: unused parameter ‘group’ [-Wunused-parameter]
+  721 | static inline GtkWidget *gtk_radio_button_new_with_label(GSList *group, const gchar *label)
+      |                                                          ~~~~~~~~^~~~~
+../include/gtk_compat.h: In function ‘gtk_radio_button_get_group’:
+../include/gtk_compat.h:726:61: warning: unused parameter ‘radio_button’ [-Wunused-parameter]
+  726 | static inline GSList *gtk_radio_button_get_group(GtkWidget *radio_button)
+      |                                                  ~~~~~~~~~~~^~~~~~~~~~~~
+../include/gtk_compat.h: In function ‘gtk_widget_show_all’:
+../include/gtk_compat.h:756:5: warning: ‘gtk_widget_show’ is deprecated: Use 'gtk_widget_set_visible or gtk_window_present' instead [-Wdeprecated-declarations]
+  756 |     gtk_widget_show(widget);
+      |     ^~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/gtkapplication.h:27,
+                 from /usr/include/gtk-4.0/gtk/gtkwindow.h:33,
+                 from /usr/include/gtk-4.0/gtk/gtkaboutdialog.h:30,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:34,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/gtkwidget.h:273:12: note: declared here
+  273 | void       gtk_widget_show                (GtkWidget           *widget);
+      |            ^~~~~~~~~~~~~~~
+In file included from ../include/debugging.h:29,
+                 from ../src/init.c:27:
+../include/gtk_compat.h: In function ‘gtk_dialog_run’:
+../include/gtk_compat.h:759:46: warning: unused parameter ‘dialog’ [-Wunused-parameter]
+  759 | static inline gint gtk_dialog_run(GtkDialog *dialog)
+      |                                   ~~~~~~~~~~~^~~~~~
+../include/gtk_compat.h: In function ‘gtk_box_pack_start’:
+../include/gtk_compat.h:766:79: warning: unused parameter ‘expand’ [-Wunused-parameter]
+  766 | static inline void gtk_box_pack_start(GtkBox *box, GtkWidget *child, gboolean expand, gboolean fill, guint padding)
+      |                                                                      ~~~~~~~~~^~~~~~
+../include/gtk_compat.h:766:96: warning: unused parameter ‘fill’ [-Wunused-parameter]
+  766 | static inline void gtk_box_pack_start(GtkBox *box, GtkWidget *child, gboolean expand, gboolean fill, guint padding)
+      |                                                                                       ~~~~~~~~~^~~~
+../include/gtk_compat.h:766:108: warning: unused parameter ‘padding’ [-Wunused-parameter]
+  766 | static inline void gtk_box_pack_start(GtkBox *box, GtkWidget *child, gboolean expand, gboolean fill, guint padding)
+      |                                                                                                      ~~~~~~^~~~~~~
+In file included from ../include/gui_handlers.h:28,
+                 from ../src/init.c:32:
+../include/defines.h: At top level:
+../include/defines.h:45: warning: "TABLE_DATA_DIR" redefined
+   45 | #define TABLE_DATA_DIR "Tables"
+      | 
+In file included from ../src/init.c:26:
+./config.h:42: note: this is the location of the previous definition
+   42 | #define TABLE_DATA_DIR "tables"
+      | 
+../src/init.c: In function ‘read_config’:
+../src/init.c:271:25: warning: ‘g_memdup’ is deprecated: Use 'g_memdup2' instead [-Wdeprecated-declarations]
+  271 |                         DATA_SET_FULL(global_data,"dash_1_size_ratio",g_memdup(&tmpf,sizeof(gfloat)),cleanup);
+      |                         ^~~~~~~~~~~~~
+In file included from /usr/include/glib-2.0/glib.h:82,
+                 from /usr/include/gtk-4.0/gtk/css/gtkcss.h:30,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:30,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/glib-2.0/glib/gstrfuncs.h:257:23: note: declared here
+  257 | gpointer              g_memdup         (gconstpointer mem,
+      |                       ^~~~~~~~
+../src/init.c:282:25: warning: ‘g_memdup’ is deprecated: Use 'g_memdup2' instead [-Wdeprecated-declarations]
+  282 |                         DATA_SET_FULL(global_data,"dash_2_size_ratio",g_memdup(&tmpf,sizeof(gfloat)),cleanup);
+      |                         ^~~~~~~~~~~~~
+In file included from /usr/include/glib-2.0/glib.h:82,
+                 from /usr/include/gtk-4.0/gtk/css/gtkcss.h:30,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:30,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/glib-2.0/glib/gstrfuncs.h:257:23: note: declared here
+  257 | gpointer              g_memdup         (gconstpointer mem,
+      |                       ^~~~~~~~
+../src/init.c:344:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  344 |                 if ((GINT)DATA_GET(global_data,"lv_zoom") < 1)
+      |                     ^
+../src/init.c:348:21: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  348 |                 if ((GINT)DATA_GET(global_data,"lv_scroll_delay") < 40)
+      |                     ^
+../src/init.c: In function ‘save_config’:
+../src/init.c:415:57: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  415 |         cfg_write_boolean(cfgfile, "Global", "Tooltips",(GBOOLEAN)DATA_GET(global_data,"tips_in_use"));
+      |                                                         ^
+../src/init.c:416:63: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  416 |         cfg_write_boolean(cfgfile, "Global", "Ellipsize_Tabs",(GBOOLEAN)DATA_GET(global_data,"ellipsize_tabs"));
+      |                                                               ^
+../src/init.c:417:65: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  417 |         cfg_write_boolean(cfgfile, "Global", "LogRawDatastream",(GBOOLEAN)DATA_GET(global_data,"log_raw_datastream"));
+      |                                                                 ^
+../src/init.c:418:62: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  418 |         cfg_write_boolean(cfgfile, "Global", "NetworkAccess",(GBOOLEAN)DATA_GET(global_data,"network_access"));
+      |                                                              ^
+../src/init.c:420:56: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  420 |         cfg_write_int(cfgfile, "Global", "Temp_Units", (GINT)DATA_GET(global_data,"mtx_temp_units"));
+      |                                                        ^
+../src/init.c:421:59: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  421 |         cfg_write_int(cfgfile, "Global", "Color_Scaling", (GINT)DATA_GET(global_data,"mtx_color_scale"));
+      |                                                           ^
+../src/init.c:426:58: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  426 |         cfg_write_int(cfgfile, "Global", "RTSlider_FPS", (GINT)DATA_GET(global_data,"rtslider_fps"));
+      |                                                          ^
+../src/init.c:427:56: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  427 |         cfg_write_int(cfgfile, "Global", "RTText_FPS", (GINT)DATA_GET(global_data,"rttext_fps"));
+      |                                                        ^
+../src/init.c:428:59: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  428 |         cfg_write_int(cfgfile, "Global", "Dashboard_FPS", (GINT)DATA_GET(global_data,"dashboard_fps"));
+      |                                                           ^
+../src/init.c:429:54: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  429 |         cfg_write_int(cfgfile, "Global", "VE3D_FPS", (GINT)DATA_GET(global_data,"ve3d_fps"));
+      |                                                      ^
+../src/init.c:430:53: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  430 |         cfg_write_int(cfgfile, "Global", "dbg_lvl", (GINT)DATA_GET(global_data,"dbg_lvl"));
+      |                                                     ^
+../src/init.c:435:58: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  435 |         cfg_write_int(cfgfile, "Serial", "read_timeout", (GINT)DATA_GET(global_data,"read_timeout"));
+      |                                                          ^
+../src/init.c:449:46: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  449 |                                 orig_width = (GINT) OBJ_GET(dash,"orig_width");
+      |                                              ^
+../src/init.c:450:47: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  450 |                                 orig_height = (GINT) OBJ_GET(dash,"orig_height");
+      |                                               ^
+../src/init.c:488:46: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  488 |                                 orig_width = (GINT) OBJ_GET(dash,"orig_width");
+      |                                              ^
+../src/init.c:489:47: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  489 |                                 orig_height = (GINT) OBJ_GET(dash,"orig_height");
+      |                                               ^
+../src/init.c:583:33: warning: comparison of integer expressions of different signedness: ‘guint’ {aka ‘unsigned int’} and ‘gint’ {aka ‘int’} [-Wsign-compare]
+  583 |                 for (guint i=0;i<total;i++)
+      |                                 ^
+../src/init.c:599:69: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  599 |         cfg_write_int(cfgfile, "DataLogger", "preferred_delimiter", (GINT)DATA_GET(global_data,"preferred_delimiter"));
+      |                                                                     ^
+../src/init.c:606:33: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  606 |                                 (GBOOLEAN)DATA_GET(global_data,"autodetect_port"));
+      |                                 ^
+../src/init.c:610:53: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  610 |         cfg_write_int(cfgfile, "Logviewer", "zoom", (GINT)DATA_GET(global_data,"lv_zoom"));
+      |                                                     ^
+../src/init.c:611:60: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  611 |         cfg_write_int(cfgfile, "Logviewer", "scroll_delay",(GINT) DATA_GET(global_data,"lv_scroll_delay"));
+      |                                                            ^
+../src/init.c: In function ‘mem_dealloc’:
+../src/init.c:917:50: warning: cast between incompatible function types from ‘void (*)(void *)’ to ‘void (*)(void *, void *)’ [-Wcast-function-type]
+  917 |                 g_list_foreach(toggle_group_list,(GFunc)g_object_unref,NULL);
+      |                                                  ^
+../src/init.c:923:44: warning: cast between incompatible function types from ‘void (*)(void *)’ to ‘void (*)(void *, void *)’ [-Wcast-function-type]
+  923 |                 g_list_foreach(source_list,(GFunc)g_object_unref,NULL);
+      |                                            ^
+../src/init.c:937:57: warning: comparison of integer expressions of different signedness: ‘guint’ {aka ‘unsigned int’} and ‘gint’ {aka ‘int’} [-Wsign-compare]
+  937 |                                         for (guint j=0;j<firmware->page_params[i]->length;j++)
+      |                                                         ^
+../src/init.c:1048:17: warning: ‘gtk_tree_model_foreach’ is deprecated: Use 'GListModel' instead [-Wdeprecated-declarations]
+ 1048 |                 gtk_tree_model_foreach(GTK_TREE_MODEL(store),dealloc_rtt_model,NULL);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/deprecated/gtkcellarea.h:31,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:64,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtktreemodel.h:374:19: note: declared here
+  374 | void              gtk_tree_model_foreach         (GtkTreeModel            *model,
+      |                   ^~~~~~~~~~~~~~~~~~~~~~
+../src/init.c:1049:17: warning: ‘gtk_list_store_clear’ is deprecated: Use 'GListStore' instead [-Wdeprecated-declarations]
+ 1049 |                 gtk_list_store_clear(GTK_LIST_STORE(store));
+      |                 ^~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/deprecated/gtkentrycompletion.h:27,
+                 from /usr/include/gtk-4.0/gtk/gtkentry.h:40,
+                 from /usr/include/gtk-4.0/gtk/deprecated/gtktreeview.h:28,
+                 from /usr/include/gtk-4.0/gtk/deprecated/gtkcombobox.h:27,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:92,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtkliststore.h:129:15: note: declared here
+  129 | void          gtk_list_store_clear            (GtkListStore *list_store);
+      |               ^~~~~~~~~~~~~~~~~~~~
+../src/init.c:1057:41: warning: cast between incompatible function types from ‘void (*)(void *)’ to ‘void (*)(void *, void *)’ [-Wcast-function-type]
+ 1057 |                 g_list_foreach(defaults,(GFunc)cleanup,NULL);
+      |                                         ^
+../src/init.c:882:21: warning: unused variable ‘dynamic_widgets’ [-Wunused-variable]
+  882 |         GHashTable *dynamic_widgets = NULL;
+      |                     ^~~~~~~~~~~~~~~
+../src/init.c: In function ‘dataset_dealloc’:
+../src/init.c:1122:60: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+ 1122 | void dataset_dealloc(GQuark key_id,gpointer data, gpointer user_data)
+      |                                                   ~~~~~~~~~^~~~~~~~~
+../src/init.c: In function ‘dealloc_gauge’:
+../src/init.c:1599:60: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+ 1599 | G_MODULE_EXPORT void dealloc_gauge(gpointer data, gpointer user_data)
+      |                                                   ~~~~~~~~~^~~~~~~~~
+../src/init.c: In function ‘dealloc_rtt_model’:
+../src/init.c:1660:9: warning: ‘gtk_tree_model_get’ is deprecated: Use 'GListModel' instead [-Wdeprecated-declarations]
+ 1660 |         gtk_tree_model_get (model, iter,
+      |         ^~~~~~~~~~~~~~~~~~
+In file included from /usr/include/gtk-4.0/gtk/deprecated/gtkcellarea.h:31,
+                 from /usr/include/gtk-4.0/gtk/gtk.h:64,
+                 from ../include/args.h:28,
+                 from ../src/init.c:25:
+/usr/include/gtk-4.0/gtk/deprecated/gtktreemodel.h:364:19: note: declared here
+  364 | void              gtk_tree_model_get             (GtkTreeModel *tree_model,
+      |                   ^~~~~~~~~~~~~~~~~~
+../src/init.c:1655:78: warning: unused parameter ‘path’ [-Wunused-parameter]
+ 1655 | G_MODULE_EXPORT gboolean dealloc_rtt_model(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter,gpointer user_data)
+      |                                                                 ~~~~~~~~~~~~~^~~~
+../src/init.c:1655:111: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+ 1655 | G_MODULE_EXPORT gboolean dealloc_rtt_model(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter,gpointer user_data)
+      |                                                                                                      ~~~~~~~~~^~~~~~~~~
+../src/init.c: In function ‘dealloc_list’:
+../src/init.c:1782:44: warning: unused parameter ‘key’ [-Wunused-parameter]
+ 1782 | G_MODULE_EXPORT void dealloc_list(gpointer key, gpointer value, gpointer user_data)
+      |                                   ~~~~~~~~~^~~
+../src/init.c:1782:74: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+ 1782 | G_MODULE_EXPORT void dealloc_list(gpointer key, gpointer value, gpointer user_data)
+      |                                                                 ~~~~~~~~~^~~~~~~~~
+../src/init.c: In function ‘dealloc_tabinfo’:
+../src/init.c:1830:62: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+ 1830 | G_MODULE_EXPORT void dealloc_tabinfo(gpointer data, gpointer user_data)
+      |                                                     ~~~~~~~~~^~~~~~~~~
+../src/init.c: In function ‘free_test’:
+../src/init.c:1877:41: warning: unused parameter ‘user_data’ [-Wunused-parameter]
+ 1877 | void free_test (gpointer data, gpointer user_data)
+      |                                ~~~~~~~~~^~~~~~~~~
+[6/26] Compiling C object src/megatunix-redux.p/test_framework.c.o
+../src/test_framework.c: In function ‘mtx_test_file_create_temp’:
+../src/test_framework.c:492:13: warning: implicit declaration of function ‘g_unlink’; did you mean ‘unlink’? [-Wimplicit-function-declaration]
+  492 |             g_unlink(*filename);
+      |             ^~~~~~~~
+      |             unlink
+../src/test_framework.c: In function ‘mtx_test_runner_run_all’:
+../src/test_framework.c:582:49: warning: unused parameter ‘runner’ [-Wunused-parameter]
+  582 | gboolean mtx_test_runner_run_all(MtxTestRunner *runner, GError **error)
+      |                                  ~~~~~~~~~~~~~~~^~~~~~
+../src/test_framework.c:582:66: warning: unused parameter ‘error’ [-Wunused-parameter]
+  582 | gboolean mtx_test_runner_run_all(MtxTestRunner *runner, GError **error)
+      |                                                         ~~~~~~~~~^~~~~
+ninja: build stopped: subcommand failed.

@@ -25,8 +25,8 @@ extern "C" {
 #ifndef __DEBUG_GUI_H__
 #define __DEBUG_GUI_H__
 
-#include <config.h>
-#include <gtk/gtk.h>
+#include "config_compat.h"
+#include "gtk_compat.h"
 
 /* Debugging Enumerations */
 typedef enum

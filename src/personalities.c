@@ -18,6 +18,7 @@
   \author David Andruczyk
   */
 
+#include <config.h>
 #include <configfile.h>
 #include <debugging.h>
 #include <getfiles.h>

@@ -70,7 +70,7 @@ G_MODULE_EXPORT gboolean dashdesigner_about(GtkWidget * UNUSED(widget), gpointer
 				"copyright","David J. Andruczyk(2012)",
 				"comments","Dashboard Designer is a tool to design custom Dash gauge layouts for the MegaTunix Tuning Software",
 				"license","GNU GPL v2",
-				"website","http://megatunix.sourceforge.net",
+				"website","https://github.com/RallyPat/MegaTunixRedux",
 				"authors",authors,
 				"artists",artists,
 				"documenters",authors,

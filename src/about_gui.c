@@ -103,7 +103,7 @@ G_MODULE_EXPORT gboolean about_popup(GtkWidget *widget, gpointer data)
 				"copyright","David J. Andruczyk(2012)",
 				"comments",comments,
 				"license","GPL v2",
-				"website","http://megatunix.sourceforge.net",
+				"website","https://github.com/RallyPat/MegaTunixRedux",
 				"authors",authors,
 				"artists",artists,
 				"documenters",authors,

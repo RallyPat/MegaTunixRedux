@@ -21,6 +21,9 @@
 
 #include <debugging.h>
 #include <defines.h>
+#include <gtk_compat.h>
+#include <glib.h>
+#include <gtk/gtk.h>
 #include <fcntl.h>
 #include <getfiles.h>
 #include <glib/gstdio.h>
@@ -419,7 +422,7 @@ gchar * choose_file(MtxFileIO *data)
 			gtk_window_set_transient_for(GTK_WINDOW(gtk_widget_get_toplevel(dialog)),GTK_WINDOW(data->parent));
 
 		if ((data->absolute_path) && (!data->default_path))
-			gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER(dialog),data->absolute_path);
+			gtk_file_chooser_set_current_folder_string (GTK_FILE_CHOOSER(dialog),data->absolute_path);
 		else if (data->default_path)
 		{
 			/*printf("should be using system path + %s\n",data->default_path);*/
@@ -430,7 +433,7 @@ gchar * choose_file(MtxFileIO *data)
 				path = g_build_filename(HOME(),"mtx",data->project,data->default_path, NULL);
 				/*printf("System path is not found, falling back to user path %s\n",path);*/
 			}
-			gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER(dialog),path);
+			gtk_file_chooser_set_current_folder_string (GTK_FILE_CHOOSER(dialog),path);
 			g_free(path);
 		}
 	}
@@ -465,7 +468,7 @@ gchar * choose_file(MtxFileIO *data)
 			{
 				vector = g_strsplit(data->filename,PSEP,-1);
 				tmpbuf = g_strconcat(defdir,PSEP,vector[g_strv_length(vector)-1],NULL);
-				gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),defdir);
+				gtk_file_chooser_set_current_folder_string(GTK_FILE_CHOOSER(dialog),defdir);
 				gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog),vector[g_strv_length(vector)-1]);
 				g_strfreev(vector);
 				g_free(tmpbuf);
@@ -475,7 +478,7 @@ gchar * choose_file(MtxFileIO *data)
 		}
 		else
 		{
-			gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),defdir);
+			gtk_file_chooser_set_current_folder_string(GTK_FILE_CHOOSER(dialog),defdir);
 			gtk_file_chooser_set_current_name (GTK_FILE_CHOOSER (dialog), data->default_filename );
 		}
 		g_free(defdir);
@@ -509,7 +512,7 @@ gchar * choose_file(MtxFileIO *data)
 		path = g_build_filename(HOME(),"mtx",data->project,data->external_path,NULL);
 		if (!g_file_test(path,G_FILE_TEST_IS_DIR))
 			g_mkdir(path,0755);
-		gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER(dialog),path);
+		gtk_file_chooser_set_current_folder_string (GTK_FILE_CHOOSER(dialog),path);
 		g_free(path);
 
 	}

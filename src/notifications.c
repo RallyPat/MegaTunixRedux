@@ -14,10 +14,11 @@
 /*!
   \file src/notifications.c
   \ingroup CoreMtx
-  \brief Where all the notification messages come from...
+  \brief Where all the notif			tmpbuf = g_strdup_printf("MegaTunix %s,   (%s)  %s", GIT_HASH, firmware->actual_signature, text);cation messages come from...
   \author David Andruczyk
  */
 
+#include <config.h>
 #include <args.h>
 #include <debugging.h>
 #include <gui_handlers.h>
@@ -449,12 +450,12 @@ G_MODULE_EXPORT void set_title(gchar * text)
 	if (firmware)
 	{
 		if (firmware->actual_signature)
-			tmpbuf = g_strdup_printf("MegaTunix %s,   (%s)   %s",GIT_COMMIT,firmware->actual_signature,text);
+			tmpbuf = g_strdup_printf("MegaTunix %s,   (%s)   %s",GIT_HASH,firmware->actual_signature,text);
 		else
-			tmpbuf = g_strconcat("MegaTunix ",GIT_COMMIT,",   ",text,NULL);
+			tmpbuf = g_strconcat("MegaTunix ",GIT_HASH,",   ",text,NULL);
 	}
 	else
-		tmpbuf = g_strconcat("MegaTunix ",GIT_COMMIT,",   ",text,NULL);
+		tmpbuf = g_strconcat("MegaTunix ",GIT_HASH,",   ",text,NULL);
 
 	gtk_window_set_title(GTK_WINDOW(lookup_widget("main_window")),tmpbuf);
 	g_free(tmpbuf);

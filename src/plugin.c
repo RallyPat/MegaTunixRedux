@@ -19,6 +19,7 @@
   \authors David Andruczyk
   */
 
+#include <config.h>
 #include <debugging.h>
 #include <defines.h>
 #include <notifications.h>

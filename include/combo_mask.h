@@ -26,7 +26,7 @@ extern "C" {
 #define __COMBO_MASK_H__
 
 #include <configfile.h>
-#include <gtk/gtk.h>
+#include "gtk_compat.h"
 
 /* A simple validating entry */
 

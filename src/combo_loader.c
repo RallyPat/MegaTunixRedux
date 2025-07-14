@@ -34,7 +34,6 @@
 #include <combo_mask.h>
 #include <debugging.h>
 #include <defines.h>
-#include <glade/glade.h>
 #include <gui_handlers.h>
 #include <keyparser.h>
 
