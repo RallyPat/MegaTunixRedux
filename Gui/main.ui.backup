@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 converted to GTK4 Builder format for MegaTunix Redux -->
+<interface>
+  <requires lib="gtk" version="4.12"/>
+  
+  <!-- Main Application Window -->
+  <object class="GtkApplicationWindow" id="mtx_main_window">
+    <property name="title">MegaTunix Redux</property>
+    <property name="default-width">800</property>
+    <property name="default-height">600</property>
+    <property name="resizable">True</property>
+    <signal name="close-request" handler="on_main_window_close"/>
+    
+    <!-- Main content area -->
+    <child>
+      <object class="GtkBox" id="mtx_top_vbox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">0</property>
+        
+        <!-- Header bar with menu and controls -->
+        <child>
+          <object class="GtkHeaderBar" id="main_headerbar">
+            <property name="title-widget">
+              <object class="GtkLabel">
+                <property name="label">MegaTunix Redux</property>
+                <style>
+                  <class name="title"/>
+                </style>
+              </object>
+            </property>
+            
+            <!-- Start section - Menu button -->
+            <child type="start">
+              <object class="GtkMenuButton" id="main_menu_button">
+                <property name="icon-name">open-menu-symbolic</property>
+                <property name="tooltip-text">Main Menu</property>
+                <property name="menu-model">main_menu</property>
+              </object>
+            </child>
+            
+            <!-- End section - Connection status and controls -->
+            <child type="end">
+              <object class="GtkBox" id="header_controls">
+                <property name="orientation">horizontal</property>
+                <property name="spacing">6</property>
+                
+                <child>
+                  <object class="GtkLabel" id="connection_status_label">
+                    <property name="label">Disconnected</property>
+                    <style>
+                      <class name="caption"/>
+                    </style>
+                  </object>
+                </child>
+                
+                <child>
+                  <object class="GtkButton" id="connect_button">
+                    <property name="icon-name">network-wired-symbolic</property>
+                    <property name="tooltip-text">Connect to ECU</property>
+                    <signal name="clicked" handler="on_connect_clicked"/>
+                  </object>
+                </child>
+                
+                <child>
+                  <object class="GtkButton" id="settings_button">
+                    <property name="icon-name">preferences-system-symbolic</property>
+                    <property name="tooltip-text">Settings</property>
+                    <signal name="clicked" handler="on_settings_clicked"/>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        
+        <!-- Main content area with notebook -->
+        <child>
+          <object class="GtkNotebook" id="toplevel_notebook">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="show-tabs">True</property>
+            <property name="show-border">False</property>
+            <property name="scrollable">True</property>
+            
+            <!-- Dashboard Tab -->
+            <child>
+              <object class="GtkBox" id="dashboard_page">
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                
+                <child>
+                  <object class="GtkScrolledWindow" id="dashboard_scroll">
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="hscrollbar-policy">automatic</property>
+                    <property name="vscrollbar-policy">automatic</property>
+                    
+                    <child>
+                      <object class="GtkFixed" id="dashboard_container">
+                        <property name="hexpand">True</property>
+                        <property name="vexpand">True</property>
+                        <style>
+                          <class name="mtx-dashboard"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel">
+                <property name="label">Dashboard</property>
+              </object>
+            </child>
+            
+            <!-- Tuning Tab -->
+            <child>
+              <object class="GtkBox" id="tuning_page">
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Tuning interface will be loaded here</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel">
+                <property name="label">Tuning</property>
+              </object>
+            </child>
+            
+            <!-- Data Logging Tab -->
+            <child>
+              <object class="GtkBox" id="logging_page">
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Data logging interface will be loaded here</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel">
+                <property name="label">Data Logging</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        
+        <!-- Status bar -->
+        <child>
+          <object class="GtkStatusbar" id="main_statusbar">
+            <property name="margin-start">6</property>
+            <property name="margin-end">6</property>
+            <property name="margin-bottom">3</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  
+  <!-- Main Menu Model -->
+  <menu id="main_menu">
+    <section>
+      <item>
+        <attribute name="label">Open Project</attribute>
+        <attribute name="action">app.open</attribute>
+      </item>
+      <item>
+        <attribute name="label">Save Project</attribute>
+        <attribute name="action">app.save</attribute>
+      </item>
+      <item>
+        <attribute name="label">Recent Projects</attribute>
+        <attribute name="action">app.recent</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label">Interrogate ECU</attribute>
+        <attribute name="action">app.interrogate</attribute>
+      </item>
+      <item>
+        <attribute name="label">Read Tables</attribute>
+        <attribute name="action">app.read_tables</attribute>
+      </item>
+      <item>
+        <attribute name="label">Burn to ECU</attribute>
+        <attribute name="action">app.burn</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label">Dashboard Designer</attribute>
+        <attribute name="action">app.dashboard_designer</attribute>
+      </item>
+      <item>
+        <attribute name="label">Gauge Designer</attribute>
+        <attribute name="action">app.gauge_designer</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label">Preferences</attribute>
+        <attribute name="action">app.preferences</attribute>
+      </item>
+      <item>
+        <attribute name="label">About</attribute>
+        <attribute name="action">app.about</attribute>
+      </item>
+      <item>
+        <attribute name="label">Quit</attribute>
+        <attribute name="action">app.quit</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

@@ -8,7 +8,8 @@
 #include "defines.h"
 #include "args.h"
 #include "speeduino_plugin.h"
-#include "speeduino_bridge.h"
+#include "ecu_manager.h"
+#include "ecu_detector.h"
 #include "plugin_system.h"
 
 extern gconstpointer *global_data;
@@ -16,13 +17,23 @@ extern gconstpointer *global_data;
 // Global variables for runtime simulation
 static guint simulation_timeout_id = 0;
 
+// Structure for passing ECU detection results between threads
+typedef struct {
+    GtkBuilder *builder;
+    gboolean success;
+    gchar *error_message;
+} EcuDetectionThreadResult;
+
 // Helper function prototypes
 static gboolean simulate_connection_result(gpointer user_data);
-static gboolean attempt_real_connection_result(gpointer user_data);
-static gboolean real_connection_success_result(gpointer user_data);
 static gboolean update_runtime_data_simulation(gpointer user_data);
 static gboolean update_runtime_data_real(gpointer user_data);
 static gboolean simulate_interrogation_progress(gpointer user_data);
+static gpointer ecu_detection_thread(gpointer user_data);
+static gboolean ecu_detection_thread_complete(gpointer user_data);
+static gboolean start_ecu_detection(gpointer user_data);
+static gboolean ecu_detection_success(gpointer user_data);
+static gboolean offer_simulation_mode(gpointer user_data);
 
 // Dashboard stub functions - temporarily disabled for GTK4 event system porting
 
@@ -251,103 +262,224 @@ G_MODULE_EXPORT void update_ve3d_if_necessary(void)
 // Simple GUI handlers for main UI  
 G_MODULE_EXPORT void on_connect_clicked(GtkButton *button, gpointer user_data)
 {
-    // Real Speeduino plugin integration
-    g_message("Connect button clicked - attempting real ECU connection via Speeduino plugin");
+    g_message("Connect button clicked - starting ECU detection");
     
     // Debug output
-    g_message("Button handler called! Button: %p, user_data: %p", button, user_data);
-    
-    // Get the builder and update status
-    GtkBuilder *builder = (GtkBuilder *)DATA_GET(global_data, "main_builder");
-    g_message("Builder from global_data: %p", builder);
-    
-    if (!builder) {
-        g_warning("Builder is NULL! Cannot proceed with connection");
+    g_message("global_data pointer: %p", global_data);
+    if (!global_data) {
+        g_critical("global_data is NULL! Cannot proceed with connection");
         return;
     }
     
-    if (builder) {
-        GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
-        GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
-        GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
-        GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
-        GtkWidget *baud_entry = GTK_WIDGET(gtk_builder_get_object(builder, "baud_entry"));
-        
-        g_message("Found widgets: status_label=%p, connect_btn=%p, disconnect_btn=%p, port_entry=%p, baud_entry=%p", 
-                  status_label, connect_btn, disconnect_btn, port_entry, baud_entry);
-        
-        if (status_label) {
-            gtk_label_set_text(GTK_LABEL(status_label), "Connecting...");
+    // Get the builder
+    GtkBuilder *builder = (GtkBuilder *)DATA_GET(global_data, "main_builder");
+    g_message("Retrieved builder from global_data: %p", builder);
+    
+    if (!builder) {
+        g_warning("Builder is NULL! Cannot proceed with connection");
+        // Try to get builder from user_data as fallback
+        if (user_data && GTK_IS_BUILDER(user_data)) {
+            builder = GTK_BUILDER(user_data);
+            g_message("Using builder from user_data: %p", builder);
+        } else {
+            g_critical("No valid builder available, cannot proceed");
+            return;
         }
+    }
+    
+    // Get UI widgets
+    GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
+    GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
+    GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
+    GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
+    GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
+    GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
+    
+    // Clear previous information
+    if (port_entry) {
+        GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
+        if (buffer) {
+            gtk_entry_buffer_set_text(buffer, "", -1);
+        }
+    }
+    
+    if (ecu_sig_label) {
+        gtk_label_set_text(GTK_LABEL(ecu_sig_label), "Signature: Unknown");
+    }
+    if (fw_ver_label) {
+        gtk_label_set_text(GTK_LABEL(fw_ver_label), "Version: Unknown");
+    }
+    
+    // Update UI for detection phase
+    if (status_label) {
+        gtk_label_set_text(GTK_LABEL(status_label), "Detecting ECUs...");
+    }
+    
+    // Disable connect button during detection
+    if (connect_btn) {
+        gtk_widget_set_sensitive(connect_btn, FALSE);
+    }
+    
+    // Start ECU detection process
+    g_message("Starting ECU detection...");
+    
+    // Initialize ECU manager
+    g_message("Attempting to initialize ECU manager...");
+    
+    gboolean ecu_manager_init_result = ecu_manager_initialize();
+    g_message("ECU manager initialization result: %s", ecu_manager_init_result ? "SUCCESS" : "FAILED");
+    
+    if (!ecu_manager_init_result) {
+        g_warning("Failed to initialize ECU manager");
         
-        // Disable connect button during attempt
+        // Show error and reset UI
+        if (status_label) {
+            gtk_label_set_text(GTK_LABEL(status_label), "ECU Manager initialization failed - Starting simulation");
+        }
         if (connect_btn) {
             gtk_widget_set_sensitive(connect_btn, FALSE);
         }
         
-        // Get connection parameters from UI
-        const gchar *device_path = "/dev/ttyUSB0";  // Default
-        gint baud_rate = 115200;  // Default
-        
-        if (port_entry) {
-            GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
-            if (buffer) {
-                const gchar *text = gtk_entry_buffer_get_text(buffer);
-                if (text && strlen(text) > 0) {
-                    device_path = text;
-                }
-            }
-        }
-        
-        if (baud_entry) {
-            GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(baud_entry));
-            if (buffer) {
-                const gchar *text = gtk_entry_buffer_get_text(buffer);
-                if (text && strlen(text) > 0) {
-                    baud_rate = atoi(text);
-                }
-            }
-        }
-        
-        g_message("Attempting connection to %s at %d baud", device_path, baud_rate);
-        
-        // Try real connection first, fall back to simulation if no hardware
-        gboolean real_connection_attempted = FALSE;
-        
-        // Check if device exists
-        if (g_file_test(device_path, G_FILE_TEST_EXISTS)) {
-            real_connection_attempted = TRUE;
-            g_message("Serial device found, attempting real connection...");
-            
-            // Initialize bridge if not already done
-            if (!speeduino_bridge_initialize()) {
-                g_warning("Failed to initialize Speeduino bridge");
-                // Fall back to simulation
-                g_timeout_add(500, (GSourceFunc)simulate_connection_result, builder);
-                return;
-            }
-            
-            // Try real connection using bridge
-            GError *error = NULL;
-            if (speeduino_bridge_connect(device_path, baud_rate, &error)) {
-                g_message("Real connection successful!");
-                g_timeout_add(1000, (GSourceFunc)real_connection_success_result, builder);
-            } else {
-                g_message("Real connection failed: %s", error ? error->message : "Unknown error");
-                g_clear_error(&error);
-                // Fall back to simulation
-                g_timeout_add(1000, (GSourceFunc)simulate_connection_result, builder);
-            }
-        } else {
-            g_message("Serial device not found, using simulation mode");
-            // Immediately fall back to simulation
-            g_timeout_add(500, (GSourceFunc)simulate_connection_result, builder);
-        }
+        // Skip real detection and go straight to simulation
+        g_timeout_add(1000, (GSourceFunc)simulate_connection_result, builder);
+        return;
     }
+    
+    // Run ECU detection in background thread to avoid blocking UI
+    g_thread_new("ecu_detection", ecu_detection_thread, builder);
 }
 
-// Helper function to handle real connection success
-static gboolean real_connection_success_result(gpointer user_data)
+// Background thread for ECU detection
+static gpointer ecu_detection_thread(gpointer user_data)
+{
+    GtkBuilder *builder = GTK_BUILDER(user_data);
+    if (!builder) return NULL;
+    
+    g_message("Running ECU detection scan in background thread...");
+    
+    // Add timeout protection - if detection takes more than 10 seconds, abort
+    GTimer *timer = g_timer_new();
+    g_timer_start(timer);
+    
+    // Add debug output
+    g_message("About to call ecu_manager_auto_connect...");
+    
+    // Try to auto-connect (this includes detection)
+    GError *error = NULL;
+    gboolean connection_result = FALSE;
+    
+    // Wrap the detection in a timeout check
+    connection_result = ecu_manager_auto_connect(&error);
+    
+    gdouble elapsed = g_timer_elapsed(timer, NULL);
+    g_timer_destroy(timer);
+    
+    g_message("ecu_manager_auto_connect completed in %.2f seconds", elapsed);
+    g_message("ecu_manager_auto_connect returned: %s", connection_result ? "SUCCESS" : "FAILED");
+    if (error) {
+        g_message("Error details: %s", error->message);
+    }
+    
+    // Create result data for main thread callback
+    EcuDetectionThreadResult *result = g_new0(EcuDetectionThreadResult, 1);
+    result->builder = builder;
+    result->success = connection_result;
+    result->error_message = error ? g_strdup(error->message) : NULL;
+    
+    g_clear_error(&error);
+    
+    // Update UI from main thread
+    g_idle_add((GSourceFunc)ecu_detection_thread_complete, result);
+    
+    return NULL;
+}
+
+// Callback to handle ECU detection completion from background thread
+static gboolean ecu_detection_thread_complete(gpointer user_data)
+{
+    EcuDetectionThreadResult *result = (EcuDetectionThreadResult *)user_data;
+    if (!result) return FALSE;
+    
+    GtkBuilder *builder = result->builder;
+    if (!builder) {
+        g_free(result->error_message);
+        g_free(result);
+        return FALSE;
+    }
+    
+    GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
+    GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
+    
+    if (result->success) {
+        g_message("ECU detection and connection successful!");
+        g_timeout_add(100, (GSourceFunc)ecu_detection_success, builder);
+    } else {
+        g_message("ECU detection failed: %s", result->error_message ? result->error_message : "No ECUs found");
+        
+        // Show failure and reset UI
+        if (status_label) {
+            gtk_label_set_text(GTK_LABEL(status_label), "No ECUs detected");
+        }
+        if (connect_btn) {
+            gtk_widget_set_sensitive(connect_btn, TRUE);
+        }
+        
+        // Show simulation option after 2 seconds
+        g_timeout_add(2000, (GSourceFunc)offer_simulation_mode, builder);
+    }
+    
+    g_free(result->error_message);
+    g_free(result);
+    return FALSE;
+}
+
+// Helper function to start ECU detection (legacy, now unused)
+static gboolean start_ecu_detection(gpointer user_data)
+{
+    GtkBuilder *builder = GTK_BUILDER(user_data);
+    if (!builder) return FALSE;
+    
+    GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
+    GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
+    
+    g_message("Running ECU detection scan...");
+    
+    // Add debug output
+    g_message("About to call ecu_manager_auto_connect...");
+    
+    // Try to auto-connect (this includes detection)
+    GError *error = NULL;
+    gboolean connection_result = ecu_manager_auto_connect(&error);
+    
+    g_message("ecu_manager_auto_connect returned: %s", connection_result ? "SUCCESS" : "FAILED");
+    if (error) {
+        g_message("Error details: %s", error->message);
+    }
+    
+    if (connection_result) {
+        g_message("ECU detection and connection successful!");
+        g_timeout_add(100, (GSourceFunc)ecu_detection_success, builder);
+    } else {
+        g_message("ECU detection failed: %s", error ? error->message : "No ECUs found");
+        g_clear_error(&error);
+        
+        // Show failure and reset UI
+        if (status_label) {
+            gtk_label_set_text(GTK_LABEL(status_label), "No ECUs detected");
+        }
+        if (connect_btn) {
+            gtk_widget_set_sensitive(connect_btn, TRUE);
+        }
+        
+        // Show simulation option after 2 seconds
+        g_timeout_add(2000, (GSourceFunc)offer_simulation_mode, builder);
+    }
+    
+    return FALSE; // Remove timeout
+}
+
+// Helper function to handle successful ECU detection
+static gboolean ecu_detection_success(gpointer user_data)
 {
     GtkBuilder *builder = GTK_BUILDER(user_data);
     if (!builder) return FALSE;
@@ -355,8 +487,12 @@ static gboolean real_connection_success_result(gpointer user_data)
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
     GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
     GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
+    GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
     GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
     GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
+    
+    // Get current ECU info
+    const EcuDetectionResult *current_ecu = ecu_manager_get_current_ecu();
     
     // Update status
     if (status_label) {
@@ -371,28 +507,34 @@ static gboolean real_connection_success_result(gpointer user_data)
         gtk_widget_set_sensitive(disconnect_btn, TRUE);
     }
     
-    // Get and display ECU information
-    const gchar *ecu_signature = speeduino_bridge_get_ecu_signature();
-    const gchar *firmware_version = speeduino_bridge_get_firmware_version();
-    
-    if (ecu_sig_label) {
-        if (ecu_signature) {
-            gchar *sig_text = g_strdup_printf("Signature: %s", ecu_signature);
+    // Show detected device info
+    if (current_ecu) {
+        if (port_entry) {
+            GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
+            if (buffer) {
+                gtk_entry_buffer_set_text(buffer, current_ecu->device_path, -1);
+            }
+        }
+        
+        if (ecu_sig_label) {
+            gchar *sig_text = g_strdup_printf("Signature: %s", current_ecu->signature);
             gtk_label_set_text(GTK_LABEL(ecu_sig_label), sig_text);
             g_free(sig_text);
-        } else {
-            gtk_label_set_text(GTK_LABEL(ecu_sig_label), "Signature: Reading...");
         }
-    }
-    
-    if (fw_ver_label) {
-        if (firmware_version) {
-            gchar *ver_text = g_strdup_printf("Version: %s", firmware_version);
-            gtk_label_set_text(GTK_LABEL(fw_ver_label), ver_text);
-            g_free(ver_text);
-        } else {
-            gtk_label_set_text(GTK_LABEL(fw_ver_label), "Version: Reading...");
+        
+        if (fw_ver_label) {
+            const gchar *firmware_version = ecu_manager_get_firmware_version();
+            if (firmware_version) {
+                gchar *ver_text = g_strdup_printf("Version: %s", firmware_version);
+                gtk_label_set_text(GTK_LABEL(fw_ver_label), ver_text);
+                g_free(ver_text);
+            } else {
+                gtk_label_set_text(GTK_LABEL(fw_ver_label), "Version: Reading...");
+            }
         }
+        
+        g_message("Connected to %s at %s (%d baud)", 
+                 current_ecu->ecu_name, current_ecu->device_path, current_ecu->baud_rate);
     }
     
     // Start real runtime data updates
@@ -401,34 +543,21 @@ static gboolean real_connection_success_result(gpointer user_data)
     return FALSE; // Remove timeout
 }
 
-// Helper function to attempt real connection and handle result
-static gboolean attempt_real_connection_result(gpointer user_data)
+// Helper function to offer simulation mode when no ECUs found
+static gboolean offer_simulation_mode(gpointer user_data)
 {
     GtkBuilder *builder = GTK_BUILDER(user_data);
     if (!builder) return FALSE;
     
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
-    GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
-    GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
-    GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
-    GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
-    
-    // For now, we'll simulate a real connection attempt that fails
-    // TODO: Complete the plugin system integration to enable real hardware connection
-    
-    g_message("Real connection attempt: Plugin system integration not yet complete");
-    g_message("This is where we would:");
-    g_message("1. Initialize the plugin manager");
-    g_message("2. Load the Speeduino plugin");
-    g_message("3. Create a plugin context");
-    g_message("4. Attempt auto-detection and connection");
-    g_message("5. Get ECU signature and firmware version");
     
     if (status_label) {
-        gtk_label_set_text(GTK_LABEL(status_label), "Plugin integration in progress, using simulation...");
+        gtk_label_set_text(GTK_LABEL(status_label), "No ECUs found - Starting simulation mode");
     }
     
-    // Fall back to simulation for now
+    g_message("No real ECUs detected, starting simulation mode");
+    
+    // Start simulation after a brief delay
     g_timeout_add(1000, (GSourceFunc)simulate_connection_result, builder);
     
     return FALSE; // Remove timeout
@@ -443,6 +572,7 @@ static gboolean simulate_connection_result(gpointer user_data)
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
     GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
     GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
+    GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
     GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
     GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
     
@@ -457,6 +587,14 @@ static gboolean simulate_connection_result(gpointer user_data)
     }
     if (disconnect_btn) {
         gtk_widget_set_sensitive(disconnect_btn, TRUE);
+    }
+    
+    // Show simulated device info
+    if (port_entry) {
+        GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
+        if (buffer) {
+            gtk_entry_buffer_set_text(buffer, "Simulation Mode", -1);
+        }
     }
     
     // Update ECU info labels
@@ -480,7 +618,7 @@ static gboolean update_runtime_data_real(gpointer user_data)
     if (!builder) return TRUE; // Continue running
     
     // Check if still connected
-    if (!speeduino_bridge_is_connected()) {
+    if (!ecu_manager_is_connected()) {
         g_warning("Connection lost, stopping real data updates");
         return FALSE; // Stop updates
     }
@@ -493,9 +631,13 @@ static gboolean update_runtime_data_real(gpointer user_data)
     GtkWidget *battery_value = GTK_WIDGET(gtk_builder_get_object(builder, "battery_value"));
     GtkWidget *advance_value = GTK_WIDGET(gtk_builder_get_object(builder, "advance_value"));
     
-    // Get real runtime data from Speeduino
-    const SpeeduinoOutputChannels *data = speeduino_bridge_get_runtime_data();
-    if (data) {
+    // Get real runtime data from ECU
+    gpointer runtime_data = ecu_manager_get_runtime_data();
+    const EcuDetectionResult *ecu = ecu_manager_get_current_ecu();
+    
+    if (runtime_data && ecu && ecu->ecu_type == ECU_TYPE_SPEEDUINO) {
+        // Cast to Speeduino format
+        const SpeeduinoOutputChannels *data = (const SpeeduinoOutputChannels *)runtime_data;
         // Update labels with real data
         if (rpm_value) {
             gchar *text = g_strdup_printf("%d", data->rpm);
@@ -707,10 +849,10 @@ G_MODULE_EXPORT void on_disconnect_clicked(GtkButton *button, gpointer user_data
 {
     g_message("Disconnect button clicked - disconnecting from ECU");
     
-    // Disconnect from real hardware if connected
-    if (speeduino_bridge_is_connected()) {
-        speeduino_bridge_disconnect();
-        g_message("Disconnected from real hardware");
+    // Disconnect from ECU using universal manager
+    if (ecu_manager_is_connected()) {
+        ecu_manager_disconnect();
+        g_message("Disconnected from ECU");
     }
     
     GtkBuilder *builder = (GtkBuilder *)DATA_GET(global_data, "main_builder");
@@ -771,7 +913,7 @@ G_MODULE_EXPORT void on_interrogate_clicked(GtkButton *button, gpointer user_dat
     }
     
     // Check if we're connected first
-    if (!speeduino_bridge_is_connected()) {
+    if (!ecu_manager_is_connected()) {
         g_warning("Cannot interrogate - not connected to ECU");
         
         // Show error dialog

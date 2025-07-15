@@ -18,10 +18,6 @@
 #include <errno.h>
 #include <sys/select.h>
 
-#ifndef CRTSCTS
-#define CRTSCTS 0  /* Fallback for systems without hardware flow control */
-#endif
-
 /* Speeduino command constants */
 #define SPEEDUINO_SIGNATURE_CMD 'S'
 #define SPEEDUINO_VERSION_CMD 'V'

@@ -1,0 +1,1447 @@
+This is a debug release, Git hash: 3f89f2f5
+Application activated
+
+** (megatunix-redux:264443): WARNING **: 23:12:17.145: read_logviewer_defaults called but logviewer support is disabled
+Showing main window...
+Modern GTK4 GUI setup complete
+Application initialization complete
+** Message: 23:12:20.188: Connect button clicked - starting universal ECU detection
+** Message: 23:12:20.188: Using builder from global_data: 0x6241089c3d00
+** Message: 23:12:20.188: Found widgets: status_label=0x624108a09550, connect_btn=0x624108767ad0, disconnect_btn=0x624108767df0
+** Message: 23:12:20.188: Initializing ECU manager...
+** Message: 23:12:20.188: Initializing Speeduino bridge...
+** Message: 23:12:20.188: Speeduino bridge initialized successfully
+** Message: 23:12:20.188: ECU manager initialized successfully
+** Message: 23:12:20.188: Connect button clicked - starting universal ECU detection
+** Message: 23:12:20.188: Using builder from user_data: 0x6241089c3d00
+** Message: 23:12:20.188: Found widgets: status_label=0x624108a09550, connect_btn=0x624108767ad0, disconnect_btn=0x624108767df0
+** Message: 23:12:21.191: Starting universal ECU auto-detection and connection...
+** Message: 23:12:21.191: Starting universal ECU auto-detection and connection...
+** Message: 23:12:21.191: Starting ECU detection in background thread...
+** Message: 23:12:21.191: Starting auto-connect...
+** Message: 23:12:21.191: Starting ECU auto-detection...
+** Message: 23:12:21.191: Starting ECU detection scan...
+** Message: 23:12:21.191: Probing device: /dev/ttyACM0
+** Message: 23:12:21.191: Starting ECU detection in background thread...
+** Message: 23:12:21.192: Starting auto-connect...
+** Message: 23:12:21.192: Starting ECU auto-detection...
+** Message: 23:12:21.192: Starting ECU detection scan...
+** Message: 23:12:21.192: Probing device: /dev/ttyACM0
+** Message: 23:12:23.301: Found Arduino device at /dev/ttyACM0 with binary response (2 bytes), assuming Speeduino
+** Message: 23:12:23.301: ✅ Detected Speeduino (Arduino-based) at /dev/ttyACM0 (115200 baud): Binary response from /dev/ttyACM0
+** Message: 23:12:23.301: Probing device: /dev/ttyS0
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.301: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.301: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.301: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.301: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.301: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.301: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+** Message: 23:12:23.302: Probing device: /dev/ttyS1
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.302: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+** Message: 23:12:23.303: Probing device: /dev/ttyS2
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.303: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+** Message: 23:12:23.304: Probing device: /dev/ttyS3
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.304: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.305: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.305: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.305: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.305: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.305: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.305: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.306: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:23.307: Error getting terminal attributes: Input/output error
+** Message: 23:12:23.307: ECU detection scan complete. Found 1 ECU(s)
+** Message: 23:12:23.307: Auto-detection found 1 ECU(s)
+** Message: 23:12:23.307:   - Speeduino (Arduino-based) at /dev/ttyACM0 (115200 baud): Binary response from /dev/ttyACM0
+** Message: 23:12:23.307: Auto-connecting to best ECU: Speeduino (Arduino-based)
+** Message: 23:12:23.307: Connecting to Speeduino (Arduino-based) at /dev/ttyACM0 (115200 baud)...
+** Message: 23:12:23.307: Connecting to Speeduino at /dev/ttyACM0 (baud: 115200)
+** Message: 23:12:25.412: Found Arduino device at /dev/ttyACM0 with binary response (7 bytes), assuming Speeduino
+** Message: 23:12:25.412: ✅ Detected Speeduino (Arduino-based) at /dev/ttyACM0 (57600 baud): Binary response from /dev/ttyACM0
+** Message: 23:12:25.412: Probing device: /dev/ttyS0
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.412: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.412: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.413: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.414: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+** Message: 23:12:25.415: Probing device: /dev/ttyS1
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.415: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.416: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+** Message: 23:12:25.417: Probing device: /dev/ttyS2
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.417: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+** Message: 23:12:25.418: Probing device: /dev/ttyS3
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.418: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.419: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+
+** (megatunix-redux:264443): WARNING **: 23:12:25.420: Error getting terminal attributes: Input/output error
+** Message: 23:12:25.420: ECU detection scan complete. Found 1 ECU(s)
+** Message: 23:12:25.420: Auto-detection found 1 ECU(s)
+** Message: 23:12:25.420:   - Speeduino (Arduino-based) at /dev/ttyACM0 (57600 baud): Binary response from /dev/ttyACM0
+** Message: 23:12:25.420: Auto-connecting to best ECU: Speeduino (Arduino-based)
+** Message: 23:12:27.317: ECU signature: speeduino 202402
+** Message: 23:12:29.327: Firmware version: v10.100.40
+** Message: 23:12:29.327: Successfully connected to Speeduino: speeduino 202402
+** Message: 23:12:29.327: ✅ Successfully connected to Speeduino (Arduino-based)
+** Message: 23:12:29.327: Connecting to Speeduino (Arduino-based) at /dev/ttyACM0 (57600 baud)...
+** Message: 23:12:29.327: Already connected to Speeduino, disconnecting first...
+** Message: 23:12:29.327: Disconnecting from Speeduino...
+** Message: 23:12:29.327: ✅ Successfully connected to Speeduino (Arduino-based) at /dev/ttyACM0 (115200 baud)
+** Message: 23:12:29.330: Disconnected from Speeduino
+** Message: 23:12:29.330: Connecting to Speeduino at /dev/ttyACM0 (baud: 57600)
+** Message: 23:12:29.829: Real hardware connection established successfully
+** Message: 23:12:29.829: Starting real-time data updates from hardware
+
+** (megatunix-redux:264443): WARNING **: 23:12:31.831: Connection lost, stopping real data updates
+** Message: 23:12:35.347: Firmware version: v24.120.170
+** Message: 23:12:35.347: Successfully connected to Speeduino: speeduino 202402
+** Message: 23:12:35.347: ✅ Successfully connected to Speeduino (Arduino-based)
+** Message: 23:12:35.347: ✅ Successfully connected to Speeduino (Arduino-based) at /dev/ttyACM0 (57600 baud)
+** Message: 23:12:35.849: Real hardware connection established successfully
+** Message: 23:12:35.849: Starting real-time data updates from hardware
+
+** (megatunix-redux:264443): WARNING **: 23:12:38.853: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:40.853: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:42.860: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:44.856: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:46.863: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:48.859: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:50.866: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:52.862: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:54.866: Invalid realtime data received (0 bytes)
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.876: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.876: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.878: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.878: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.878: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.878: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.892: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.892: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.893: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.893: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.893: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.893: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.905: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.905: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.906: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.906: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.906: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.906: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.909: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.909: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.910: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.910: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.910: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.910: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.923: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.923: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.924: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.924: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.924: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.924: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.940: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.940: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.940: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.941: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.941: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.941: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.957: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.957: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.958: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.958: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.958: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.958: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.973: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.973: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.974: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.974: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.974: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.974: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.990: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.990: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.991: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.991: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.991: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:54.991: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.007: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.007: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.007: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.007: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.007: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.007: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.024: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.024: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.024: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.024: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.024: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.024: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.040: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.040: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.041: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.041: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.041: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.041: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.057: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.057: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.057: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.057: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.057: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.058: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.073: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.073: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.074: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.074: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.074: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.074: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.090: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.090: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.091: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.091: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.091: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.091: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.107: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.107: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.107: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.107: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.107: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.107: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.123: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.123: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.124: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.124: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.124: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.124: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.140: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.140: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.140: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.140: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.141: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.141: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.156: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.156: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.157: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.157: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.157: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.157: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.173: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.173: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.174: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.174: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.174: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.174: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.190: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.190: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.190: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.190: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.190: _gtk_css_corner_value_get_x: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:12:55.190: _gtk_css_corner_value_get_y: assertion 'corner->class == &GTK_CSS_VALUE_CORNER' failed
+
+** (megatunix-redux:264443): WARNING **: 23:12:56.863: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:12:58.868: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:00.866: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:02.874: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:04.871: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:06.878: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:08.876: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:10.884: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:12.881: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:14.888: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:16.885: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:18.890: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:20.889: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:22.895: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:24.892: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:26.899: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:28.894: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:30.901: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:32.897: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:34.904: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:36.901: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:38.908: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:40.905: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:42.912: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:44.910: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:46.916: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:48.913: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:50.919: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:52.917: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:54.919: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:56.921: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:13:58.928: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:00.925: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:02.931: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:04.928: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:06.936: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:08.933: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:10.941: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:12.938: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:14.944: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:16.942: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:18.950: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:20.945: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:22.953: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:24.949: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:26.956: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:28.954: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:30.961: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:32.959: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:34.961: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:36.963: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:38.970: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:40.967: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:42.975: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:44.971: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:46.979: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:48.976: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:50.984: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:52.982: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:54.988: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:56.987: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:14:58.994: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:00.992: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:02.999: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:04.997: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:07.004: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:09.001: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:11.004: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:13.005: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:15.013: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:17.009: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:19.017: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:21.015: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:23.021: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:25.020: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:27.027: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:29.024: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:31.031: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:33.028: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:35.033: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:37.032: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:39.039: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:41.035: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:43.040: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:45.038: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:47.045: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:49.043: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:51.050: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:53.047: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:55.054: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:57.052: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:15:59.059: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:01.056: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:03.063: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:05.060: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:07.067: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:09.063: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:11.070: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:13.066: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:15.073: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:17.070: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:19.077: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:21.074: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:23.081: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:25.077: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:27.083: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:29.080: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:31.086: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:33.084: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:35.086: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:37.086: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:39.092: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:41.089: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:43.095: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:45.092: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:47.098: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:49.094: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:51.100: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:53.096: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:55.102: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:57.098: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:16:59.105: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:01.101: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:03.107: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:05.104: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:07.110: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:09.106: Invalid realtime data received (1 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:11.112: Invalid realtime data received (2 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:13.109: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:15.114: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:17.110: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:19.116: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:21.112: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:23.116: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:25.114: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:27.120: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:29.116: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:31.123: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:33.118: Invalid realtime data received (1 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:35.125: Invalid realtime data received (2 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:37.121: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:39.128: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:41.123: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:43.130: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:45.126: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:47.132: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:49.129: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:51.135: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:53.131: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:55.138: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:57.134: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:17:59.140: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:01.136: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:03.142: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:05.138: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:07.145: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:09.141: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:11.147: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:13.144: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:15.150: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:17.147: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:19.153: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:21.150: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:23.156: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:25.153: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:27.155: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:29.154: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:31.160: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:33.156: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:35.161: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:37.159: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:39.166: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:41.162: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:43.168: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:45.163: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:47.170: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:49.166: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:51.171: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:53.167: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:55.173: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:57.169: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:18:59.175: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:01.171: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:03.176: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:05.173: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:07.178: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:09.175: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:11.181: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:13.176: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:15.184: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:17.182: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:19.185: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:21.181: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:23.187: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:25.183: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:27.188: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:29.185: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:31.190: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:33.187: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:35.195: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:37.189: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:39.199: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:41.199: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:43.209: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:45.209: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:47.219: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:49.220: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:51.230: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:53.230: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:55.240: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:57.240: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:19:59.249: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:01.249: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:03.260: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:05.260: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:07.269: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:09.269: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:11.279: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:13.279: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:15.290: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:17.290: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:19.300: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:21.300: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:23.313: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:25.312: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:27.321: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:29.321: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:31.331: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:33.332: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:35.341: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:37.344: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:39.352: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:41.351: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:43.362: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:45.359: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:47.367: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:49.368: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:51.379: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:53.379: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:55.389: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:57.389: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:20:59.399: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:01.400: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:03.410: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:05.410: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:07.420: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:09.420: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:11.430: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:13.430: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:15.440: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:17.441: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:19.450: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:21.450: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:23.460: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:25.460: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:27.470: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:29.471: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:31.481: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:33.481: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:35.491: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:37.492: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:39.502: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:41.502: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:43.512: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:45.513: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:47.523: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:49.524: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:51.533: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:53.534: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:55.544: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:57.545: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:21:59.555: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:01.555: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:03.565: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:05.565: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:07.577: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:09.575: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:11.585: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:13.585: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:15.595: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:17.596: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:19.607: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:21.606: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:23.616: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:25.616: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:27.627: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:29.626: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:31.636: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:33.637: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:35.647: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:37.647: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:39.657: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:41.657: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:43.667: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:45.667: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:47.677: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:49.677: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:51.687: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:53.688: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:55.697: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:57.697: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:22:59.707: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:01.711: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:03.717: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:05.717: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:07.727: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:09.727: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:11.737: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:13.737: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:15.747: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:17.743: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:19.753: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:21.754: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:23.763: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:25.763: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:27.773: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:29.774: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:31.783: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:33.785: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:35.795: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:37.796: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:39.805: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:41.808: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:43.814: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:45.810: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:47.814: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:49.812: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:51.818: Invalid realtime data received (0 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:53.814: Invalid realtime data received (3 bytes)
+
+** (megatunix-redux:264443): WARNING **: 23:23:55.820: Invalid realtime data received (0 bytes)
+** Message: 23:23:55.820: Stopping datalogging
+
+** (megatunix-redux:264443): WARNING **: 23:23:55.820: Datalogging not active
+
+(megatunix-redux:264443): GLib-CRITICAL **: 23:23:55.820: g_thread_join: assertion 'thread' failed
+
+(megatunix-redux:264443): Gtk-CRITICAL **: 23:23:55.820: gtk_notebook_get_n_pages: assertion 'GTK_IS_NOTEBOOK (notebook)' failed
+
+** (megatunix-redux:264443): WARNING **: 23:23:55.820: write_logviewer_defaults called but logviewer support is disabled
+NO Interrogation profiles found, was MegaTunix installed properly?
+Deallocing GLOBAL DATA
+removing data for lists_hash
+removing data for thread_dispatcher_exit
+removing data for mtx_uptime_timer
+removing data for sleep_correction
+removing data for leaving
+removing data for ready
+removing data for str_2_enum
+removing data for serial_params
+removing data for args
+removing data for rtv_watch_hash
+removing data for tips_in_use
+removing data for mtx_temp_units
+removing data for mtx_color_scale
+removing data for read_timeout
+removing data for status_width
+removing data for status_height
+removing data for main_width
+removing data for main_height
+removing data for dbg_lvl
+removing data for io_repair_queue
+removing data for rtslider_fps
+removing data for rttext_fps
+removing data for dashboard_fps
+removing data for ve3d_fps
+removing data for last_page
+removing data for forced_update
+removing data for rt_forced_update
+removing data for active_page
+removing data for active_table
+removing data for pbar_hold_time
+removing data for ellipsize_tabs
+removing data for last_ecu_family
+removing data for last_signature
+removing data for ecu_family
+removing data for hidden_list
+removing data for last_offline_profile
+removing data for last_offline_filename
+removing data for potential_arguments
+removing data for commands_hash
+removing data for autodetect_port
+removing data for override_port
+removing data for potential_ports
+removing data for preferred_delimiter
+removing data for widget_group_states
+removing data for widget_2_tab_hash
+removing data for io_data_queue
+removing data for slave_msg_queue
+removing data for lv_zoom
+removing data for lv_scroll_delay
+removing data for dynamic_widgets
+removing data for main_builder

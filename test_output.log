@@ -1,0 +1,7 @@
+This is a debug release, Git hash: 3f89f2f5
+Application activated
+
+** (megatunix-redux:263967): WARNING **: 23:09:48.234: read_logviewer_defaults called but logviewer support is disabled
+Showing main window...
+Modern GTK4 GUI setup complete
+Application initialization complete

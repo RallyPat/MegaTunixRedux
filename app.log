@@ -1,0 +1,10 @@
+nohup: ignoring input
+This is a debug release, Git hash: 3f89f2f5
+Application activated
+
+** (megatunix-redux:330758): WARNING **: 00:19:10.545: read_logviewer_defaults called but logviewer support is disabled
+** Message: 00:19:10.566: Storing builder in global_data: 0x641791120900
+** Message: 00:19:10.566: Builder stored successfully in global_data
+Showing main window...
+Modern GTK4 GUI setup complete
+Application initialization complete

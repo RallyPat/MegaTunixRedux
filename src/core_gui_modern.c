@@ -139,25 +139,25 @@ static void setup_css_styling(void) {
 }
 
 static void connect_signal_handlers(GtkBuilder *builder) {
-    /* Modern GTK4 signal connections */
+    /* Modern GTK4 signal connections - pass builder as user_data */
     GtkWidget *connect_btn = get_widget_from_builder(builder, "connect_button");
     GtkWidget *disconnect_btn = get_widget_from_builder(builder, "disconnect_button");
     GtkWidget *settings_btn = get_widget_from_builder(builder, "settings_button");
     GtkWidget *interrogate_btn = get_widget_from_builder(builder, "interrogate_button");
     
     if (connect_btn) {
-        g_signal_connect(connect_btn, "clicked", G_CALLBACK(on_connect_clicked), NULL);
+        g_signal_connect(connect_btn, "clicked", G_CALLBACK(on_connect_clicked), builder);
         gtk_widget_add_css_class(connect_btn, "connect");
     }
     if (disconnect_btn) {
-        g_signal_connect(disconnect_btn, "clicked", G_CALLBACK(on_disconnect_clicked), NULL);
+        g_signal_connect(disconnect_btn, "clicked", G_CALLBACK(on_disconnect_clicked), builder);
         gtk_widget_add_css_class(disconnect_btn, "disconnect");
     }
     if (settings_btn) {
-        g_signal_connect(settings_btn, "clicked", G_CALLBACK(on_settings_clicked), NULL);
+        g_signal_connect(settings_btn, "clicked", G_CALLBACK(on_settings_clicked), builder);
     }
     if (interrogate_btn) {
-        g_signal_connect(interrogate_btn, "clicked", G_CALLBACK(on_interrogate_clicked), NULL);
+        g_signal_connect(interrogate_btn, "clicked", G_CALLBACK(on_interrogate_clicked), builder);
     }
 }
 
@@ -327,7 +327,14 @@ G_MODULE_EXPORT gboolean setup_gui_modern(GtkApplication *app) {
 
     /* Load UI file */
     fname = g_build_filename(GUI_DATA_DIR, "main.ui", NULL);
-    filename = get_file((const gchar *)DATA_GET(global_data, "project_name"), fname, NULL);
+    
+    /* First try to find the file in current directory (for development) */
+    if (g_file_test(fname, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) {
+        filename = g_strdup(fname);
+    } else {
+        /* Fall back to get_file for installed locations */
+        filename = get_file((const gchar *)DATA_GET(global_data, "project_name"), fname, NULL);
+    }
     
     if (!filename) {
         g_critical("Could NOT locate file %s. Did you forget to run \"sudo make install\"?", fname);
@@ -399,8 +406,10 @@ G_MODULE_EXPORT gboolean setup_gui_modern(GtkApplication *app) {
     setup_notebook_tabs(builder);
 
     /* Store builder for later use */
+    g_message("Storing builder in global_data: %p", builder);
     DATA_SET_FULL(global_data, "main_builder", builder, g_object_unref);
     set_global_builder(builder);
+    g_message("Builder stored successfully in global_data");
 
     /* Setup tooltips (modern GTK4 way) */
     gboolean tips_in_use = (GBOOLEAN)DATA_GET(global_data, "tips_in_use");

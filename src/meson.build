@@ -35,6 +35,8 @@ src_files = [
   'serial_utils.c',
   'speeduino_plugin.c',
   'speeduino_bridge.c',  # Add bridge for simplified plugin integration
+  'ecu_detector.c',      # Universal ECU detection system
+  'ecu_manager.c',       # Universal ECU connection manager
   'builder_compat.c', # Re-enabled with globals.h created
   # Add missing core files
   'threads.c',

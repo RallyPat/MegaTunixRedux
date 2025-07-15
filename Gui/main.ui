@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.40.0 converted to GTK4 Builder format for MegaTunix Redux -->
 <interface>
-  <requires lib="gtk" version="4.12"/>
+  <requires lib="gtk" version="4.10"/>
   
   <!-- Main Application Window -->
   <object class="GtkApplicationWindow" id="mtx_main_window">
@@ -9,6 +9,7 @@
     <property name="default-width">800</property>
     <property name="default-height">600</property>
     <property name="resizable">True</property>
+    <property name="decorated">True</property>
     <signal name="close-request" handler="on_main_window_close"/>
     
     <!-- Main content area -->
@@ -62,6 +63,24 @@
                 </child>
                 
                 <child>
+                  <object class="GtkButton" id="disconnect_button">
+                    <property name="icon-name">network-wired-disconnected-symbolic</property>
+                    <property name="tooltip-text">Disconnect from ECU</property>
+                    <property name="sensitive">False</property>
+                    <signal name="clicked" handler="on_disconnect_clicked"/>
+                  </object>
+                </child>
+                
+                <child>
+                  <object class="GtkButton" id="interrogate_button">
+                    <property name="icon-name">find-location-symbolic</property>
+                    <property name="tooltip-text">Interrogate ECU</property>
+                    <property name="sensitive">False</property>
+                    <signal name="clicked" handler="on_interrogate_clicked"/>
+                  </object>
+                </child>
+                
+                <child>
                   <object class="GtkButton" id="settings_button">
                     <property name="icon-name">preferences-system-symbolic</property>
                     <property name="tooltip-text">Settings</property>
@@ -93,19 +112,253 @@
                 <property name="margin-bottom">12</property>
                 
                 <child>
-                  <object class="GtkScrolledWindow" id="dashboard_scroll">
+                  <object class="GtkBox" id="dashboard_content">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
                     <property name="hexpand">True</property>
                     <property name="vexpand">True</property>
-                    <property name="hscrollbar-policy">automatic</property>
-                    <property name="vscrollbar-policy">automatic</property>
                     
+                    <!-- Connection Status Section -->
                     <child>
-                      <object class="GtkFixed" id="dashboard_container">
-                        <property name="hexpand">True</property>
-                        <property name="vexpand">True</property>
-                        <style>
-                          <class name="mtx-dashboard"/>
-                        </style>
+                      <object class="GtkFrame" id="connection_frame">
+                        <property name="label">Connection Status</property>
+                        <child>
+                          <object class="GtkGrid" id="connection_grid">
+                            <property name="margin-start">12</property>
+                            <property name="margin-end">12</property>
+                            <property name="margin-top">6</property>
+                            <property name="margin-bottom">6</property>
+                            <property name="row-spacing">6</property>
+                            <property name="column-spacing">12</property>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Serial Port:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="port_entry">
+                                <property name="text">/dev/ttyUSB0</property>
+                                <property name="placeholder-text">Serial device path</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Baud Rate:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="baud_entry">
+                                <property name="text">115200</property>
+                                <property name="placeholder-text">Baud rate</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">ECU Signature:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">2</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="ecu_signature_label">
+                                <property name="label">Unknown</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">2</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Firmware Version:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">3</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="firmware_version_label">
+                                <property name="label">Unknown</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">3</property>
+                                </layout>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    
+                    <!-- Runtime Data Section -->
+                    <child>
+                      <object class="GtkFrame" id="runtime_frame">
+                        <property name="label">Runtime Data</property>
+                        <child>
+                          <object class="GtkGrid" id="runtime_grid">
+                            <property name="margin-start">12</property>
+                            <property name="margin-end">12</property>
+                            <property name="margin-top">6</property>
+                            <property name="margin-bottom">6</property>
+                            <property name="row-spacing">6</property>
+                            <property name="column-spacing">12</property>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">RPM:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="rpm_value">
+                                <property name="label">0</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">MAP:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="map_value">
+                                <property name="label">0</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">TPS:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">2</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="tps_value">
+                                <property name="label">0</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">2</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Coolant:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="row">3</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="coolant_value">
+                                <property name="label">0</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="row">3</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Battery:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">2</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="battery_value">
+                                <property name="label">0</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">3</property>
+                                  <property name="row">0</property>
+                                </layout>
+                              </object>
+                            </child>
+                            
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Advance:</property>
+                                <property name="halign">end</property>
+                                <layout>
+                                  <property name="column">2</property>
+                                  <property name="row">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="advance_value">
+                                <property name="label">0</property>
+                                <property name="halign">start</property>
+                                <layout>
+                                  <property name="column">3</property>
+                                  <property name="row">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>
