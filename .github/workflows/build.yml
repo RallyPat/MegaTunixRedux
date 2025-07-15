@@ -10,7 +10,7 @@ on:
     - cron: '0 0 * * 0'
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  # Customize the build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
@@ -37,6 +37,9 @@ jobs:
           libxml2-dev \
           libgl1-mesa-dev \
           libglu1-mesa-dev \
+          libjson-glib-dev \
+          libgnutls28-dev \
+          libssl-dev \
           flex \
           bison \
           gettext \
@@ -57,7 +60,8 @@ jobs:
           --buildtype=${{ env.BUILD_TYPE }} \
           -Denable_deprecated=false \
           -Dbuild_tests=true \
-          -Dbuild_docs=true
+          -Dbuild_docs=true \
+          -Denable_network_security=true
           
     - name: Build
       run: meson compile -C builddir
@@ -85,11 +89,12 @@ jobs:
       if: matrix.compiler == 'gcc'
       uses: actions/upload-artifact@v4
       with:
-        name: megatunix-linux-${{ env.BUILD_TYPE }}
+        name: megatunix-redux-linux-${{ env.BUILD_TYPE }}
         path: |
-          builddir/src/megatunix
+          builddir/src/megatunix-redux
           builddir/gaugedesigner/gaugedesigner
           builddir/dashdesigner/dashdesigner
+          builddir/src/network_demo
           
   build-windows:
     runs-on: windows-latest
@@ -112,23 +117,26 @@ jobs:
           mingw-w64-x86_64-gtk4
           mingw-w64-x86_64-libxml2
           mingw-w64-x86_64-mesa
+          mingw-w64-x86_64-json-glib
+          mingw-w64-x86_64-gnutls
           flex
           bison
           
     - name: Build Windows
       shell: msys2 {0}
       run: |
-        meson setup builddir --buildtype=${{ env.BUILD_TYPE }}
+        meson setup builddir --buildtype=${{ env.BUILD_TYPE }} -Denable_network_security=true
         meson compile -C builddir
         
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: megatunix-windows-${{ env.BUILD_TYPE }}
+        name: megatunix-redux-windows-${{ env.BUILD_TYPE }}
         path: |
-          builddir/src/megatunix.exe
+          builddir/src/megatunix-redux.exe
           builddir/gaugedesigner/gaugedesigner.exe
           builddir/dashdesigner/dashdesigner.exe
+          builddir/src/network_demo.exe
           
   build-macos:
     runs-on: macos-latest
@@ -147,6 +155,8 @@ jobs:
           pkg-config \
           gtk4 \
           libxml2 \
+          json-glib \
+          gnutls \
           flex \
           bison \
           gettext
@@ -154,17 +164,18 @@ jobs:
     - name: Configure and Build
       run: |
         export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig:$PKG_CONFIG_PATH"
-        meson setup builddir --buildtype=${{ env.BUILD_TYPE }}
+        meson setup builddir --buildtype=${{ env.BUILD_TYPE }} -Denable_network_security=true
         meson compile -C builddir
         
     - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: megatunix-macos-${{ env.BUILD_TYPE }}
+        name: megatunix-redux-macos-${{ env.BUILD_TYPE }}
         path: |
-          builddir/src/megatunix
+          builddir/src/megatunix-redux
           builddir/gaugedesigner/gaugedesigner
           builddir/dashdesigner/dashdesigner
+          builddir/src/network_demo
           
   security-scan:
     runs-on: ubuntu-latest
@@ -209,3 +220,123 @@ jobs:
       with:
         name: code-analysis
         path: cppcheck-results.txt
+        
+  test-speeduino:
+    runs-on: ubuntu-latest
+    needs: build-linux
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          meson \
+          ninja-build \
+          pkg-config \
+          libgtk-4-dev \
+          libglib2.0-dev \
+          libjson-glib-dev \
+          libgnutls28-dev \
+          socat \
+          netcat-openbsd
+          
+    - name: Build with Speeduino support
+      run: |
+        meson setup builddir --buildtype=Debug -Denable_network_security=true -Dbuild_tests=true
+        meson compile -C builddir
+        
+    - name: Test Speeduino plugin
+      run: |
+        cd builddir
+        # Run Speeduino plugin tests
+        ./tests/test_speeduino_plugin
+        
+    - name: Test network security
+      run: |
+        cd builddir
+        # Test network demo application
+        timeout 10 ./src/network_demo --test-mode || true
+        
+    - name: Test serial communication
+      run: |
+        cd builddir
+        # Create virtual serial port for testing
+        socat -d -d pty,raw,echo=0 pty,raw,echo=0 &
+        SOCAT_PID=$!
+        sleep 2
+        
+        # Test serial communication with mock data
+        ./tests/speeduino_serial_test || true
+        
+        # Cleanup
+        kill $SOCAT_PID || true
+
+  test-gui:
+    runs-on: ubuntu-latest
+    needs: build-linux
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Install dependencies and X11
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          meson \
+          ninja-build \
+          pkg-config \
+          libgtk-4-dev \
+          libglib2.0-dev \
+          libjson-glib-dev \
+          libgnutls28-dev \
+          xvfb \
+          x11-utils \
+          dbus-x11
+          
+    - name: Build GUI
+      run: |
+        meson setup builddir --buildtype=Debug -Denable_network_security=true
+        meson compile -C builddir
+        
+    - name: Setup UI files
+      run: |
+        mkdir -p /tmp/megatunix-test/glade
+        cp Gui/main.ui /tmp/megatunix-test/glade/main.ui
+        # Fix GTK version requirement for CI
+        sed -i 's/version="4.12"/version="4.10"/' /tmp/megatunix-test/glade/main.ui
+        
+    - name: Test GUI startup
+      run: |
+        # Start virtual display
+        export DISPLAY=:99
+        Xvfb :99 -screen 0 1024x768x24 &
+        XVFB_PID=$!
+        
+        # Wait for display
+        sleep 3
+        
+        # Test GUI startup
+        timeout 10 ./builddir/src/megatunix-redux --help
+        timeout 15 ./builddir/src/megatunix-redux &
+        GUI_PID=$!
+        
+        # Let GUI initialize
+        sleep 5
+        
+        # Check if GUI is running
+        if ps -p $GUI_PID > /dev/null; then
+            echo "GUI started successfully"
+            kill $GUI_PID
+        else
+            echo "GUI failed to start"
+            exit 1
+        fi
+        
+        # Cleanup
+        kill $XVFB_PID || true

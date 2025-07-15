@@ -73,9 +73,6 @@ gobject_dep = dependency('gobject-2.0', version : glib_req)
 gmodule_dep = dependency('gmodule-2.0', version : glib_req)
 gtk4_dep = dependency('gtk4', version : gtk4_req)
 libxml2_dep = dependency('libxml-2.0')
-json_glib_dep = dependency('json-glib-1.0', version: '>= 1.6')
-gnutls_dep = dependency('gnutls', version: '>= 3.7')
-epoxy_dep = dependency('epoxy', version: '>= 1.5')
 
 # OpenGL dependencies
 gl_dep = dependency('gl', required : true)
@@ -122,6 +119,42 @@ else
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'
   ]
+endif
+
+# Network security features
+epoxy_dep = dependency('epoxy', version: '>= 1.5', required: true)
+
+# Base dependencies list
+deps = [
+  glib_dep,
+  gio_dep,
+  gobject_dep,
+  gmodule_dep,
+  gtk4_dep,
+  libxml2_dep,
+  gl_dep,
+  glu_dep,
+  m_dep,
+  thread_dep,
+  epoxy_dep
+]
+
+# Network security features
+if get_option('enable_network_security')
+  # Find network security dependencies
+  gnutls_dep = dependency('gnutls', version : '>=3.6.0', required : true)
+  json_glib_dep = dependency('json-glib-1.0', version : '>=1.4.0', required : true)
+  
+  # Add to dependencies
+  deps += [gnutls_dep, json_glib_dep]
+  
+  # Add compile definitions
+  c_args += ['-DENABLE_NETWORK_SECURITY']
+  conf_data.set('ENABLE_NETWORK_SECURITY', 1)
+  
+  message('Network security features enabled')
+else
+  message('Network security features disabled')
 endif
 
 # Subdirectories

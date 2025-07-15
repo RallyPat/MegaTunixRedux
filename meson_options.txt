@@ -10,6 +10,9 @@ option('enable_opengl', type : 'boolean', value : true,
 option('enable_network', type : 'boolean', value : false,
        description : 'Enable network connections by default')
 
+option('enable_network_security', type : 'boolean', value : true,
+       description : 'Enable network security and multi-user collaboration features')
+
 option('gaugedesigner', type : 'boolean', value : false,
        description : 'Build gauge designer application')
 

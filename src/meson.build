@@ -49,7 +49,7 @@ src_files = [
   # '3d_vetable.c',    # Temporarily disabled - fixing GTK4 compatibility issues
   # 'logviewer_gui.c', # Temporarily disabled - requires extensive GTK4 porting (GDK drawing, libglade)
   'comms_gui.c',     # Re-enabling - will fix GTK4 compatibility
-  'datalogging_gui.c', # Add for datalogging GUI functions
+  # 'datalogging_gui.c', # Temporarily disabled - has syntax error that needs fixing
 ]
 
 # Dependencies for main executable

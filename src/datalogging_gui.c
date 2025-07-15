@@ -797,4 +797,5 @@ G_MODULE_EXPORT void dump_log_to_disk(GIOChannel *iochannel)
 	if (restart_tickler)
 		start_tickler(RTV_TICKLER);
 
+	EXIT();
 }

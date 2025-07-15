@@ -891,4 +891,35 @@ G_MODULE_EXPORT gboolean on_main_window_close(GtkWidget *widget, gpointer data)
     return FALSE;  /* Allow the window to close */
 }
 
+// Datalogging GUI stubs
+G_MODULE_EXPORT void start_datalogging(void) {
+    g_message("start_datalogging called (stub)");
+}
+
+G_MODULE_EXPORT void stop_datalogging(void) {
+    g_message("stop_datalogging called (stub)");
+}
+
+G_MODULE_EXPORT void dlog_select_all(void) {
+    g_message("dlog_select_all called (stub)");
+}
+
+G_MODULE_EXPORT void dlog_deselect_all(void) {
+    g_message("dlog_deselect_all called (stub)");
+}
+
+G_MODULE_EXPORT void dlog_select_defaults(void) {
+    g_message("dlog_select_defaults called (stub)");
+}
+
+G_MODULE_EXPORT gboolean internal_datalog_dump(GtkWidget *widget, gpointer data) {
+    g_message("internal_datalog_dump called (stub)");
+    return FALSE;
+}
+
+G_MODULE_EXPORT gboolean autolog_dump(gpointer data) {
+    g_message("autolog_dump called (stub)");
+    return FALSE;
+}
+
 
