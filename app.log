@@ -8,3 +8,63 @@ Application activated
 Showing main window...
 Modern GTK4 GUI setup complete
 Application initialization complete
+** Message: 00:22:31.051: stop_datalogging called (stub)
+
+(megatunix-redux:330758): GLib-CRITICAL **: 00:22:31.051: g_thread_join: assertion 'thread' failed
+
+(megatunix-redux:330758): Gtk-CRITICAL **: 00:22:31.051: gtk_notebook_get_n_pages: assertion 'GTK_IS_NOTEBOOK (notebook)' failed
+
+** (megatunix-redux:330758): WARNING **: 00:22:31.051: write_logviewer_defaults called but logviewer support is disabled
+NO Interrogation profiles found, was MegaTunix installed properly?
+Deallocing GLOBAL DATA
+removing data for lists_hash
+removing data for thread_dispatcher_exit
+removing data for mtx_uptime_timer
+removing data for sleep_correction
+removing data for leaving
+removing data for ready
+removing data for str_2_enum
+removing data for serial_params
+removing data for args
+removing data for rtv_watch_hash
+removing data for tips_in_use
+removing data for mtx_temp_units
+removing data for mtx_color_scale
+removing data for read_timeout
+removing data for status_width
+removing data for status_height
+removing data for main_width
+removing data for main_height
+removing data for dbg_lvl
+removing data for io_repair_queue
+removing data for rtslider_fps
+removing data for rttext_fps
+removing data for dashboard_fps
+removing data for ve3d_fps
+removing data for last_page
+removing data for forced_update
+removing data for rt_forced_update
+removing data for active_page
+removing data for active_table
+removing data for pbar_hold_time
+removing data for ellipsize_tabs
+removing data for last_ecu_family
+removing data for last_signature
+removing data for ecu_family
+removing data for hidden_list
+removing data for last_offline_profile
+removing data for last_offline_filename
+removing data for potential_arguments
+removing data for commands_hash
+removing data for autodetect_port
+removing data for override_port
+removing data for potential_ports
+removing data for preferred_delimiter
+removing data for widget_group_states
+removing data for widget_2_tab_hash
+removing data for io_data_queue
+removing data for slave_msg_queue
+removing data for lv_zoom
+removing data for lv_scroll_delay
+removing data for dynamic_widgets
+removing data for main_builder

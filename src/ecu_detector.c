@@ -6,7 +6,6 @@
  * - MegaSquirt 1 (MS1)
  * - MegaSquirt 2 (MS2) 
  * - MegaSquirt 3 (MS3)
- * - JimStim
  * - Other compatible ECUs
  */
 
@@ -28,15 +27,15 @@
 
 /* ECU Detection signatures and commands */
 static const EcuProbeCommand probe_commands[] = {
-    /* Speeduino detection */
+    /* Speeduino detection - Use 'Q' command which actually works */
     {
         .name = "Speeduino",
         .type = ECU_TYPE_SPEEDUINO,
-        .command = 'S',
-        .expected_response = "Speeduino",
-        .response_min_length = 1,  // Reduced to allow binary responses
+        .command = 'Q',
+        .expected_response = "speeduino",  // Response is "speeduino 202402"
+        .response_min_length = 5,  // At least "speeduino" (9 chars) but allow shorter
         .timeout_ms = 2000,
-        .baud_rates = {115200, 57600, 38400, 19200, 9600, 0}  // 115200 first as per manual
+        .baud_rates = {115200, 57600, 38400, 19200, 9600, 0}  // 115200 first as confirmed working
     },
     
     /* MegaSquirt 2 detection */
@@ -68,17 +67,6 @@ static const EcuProbeCommand probe_commands[] = {
         .command = 'Q',
         .expected_response = "MS3",
         .response_min_length = 3,
-        .timeout_ms = 2000,
-        .baud_rates = {115200, 57600, 38400, 19200, 9600, 0}
-    },
-    
-    /* JimStim detection */
-    {
-        .name = "JimStim",
-        .type = ECU_TYPE_JIMSTIM,
-        .command = 'Q',
-        .expected_response = "JimStim",
-        .response_min_length = 7,
         .timeout_ms = 2000,
         .baud_rates = {115200, 57600, 38400, 19200, 9600, 0}
     }
@@ -153,6 +141,8 @@ static gboolean configure_serial_port(gint fd, gint baud_rate)
 /* Send command and wait for response */
 static gint send_command_and_read(gint fd, gchar command, gchar *buffer, gint buffer_size, gint timeout_ms)
 {
+    g_message("Sending command 0x%02X ('%c') to device", command, command);
+    
     /* Send command */
     if (write(fd, &command, 1) != 1) {
         g_warning("Failed to send command 0x%02X: %s", command, strerror(errno));
@@ -172,11 +162,20 @@ static gint send_command_and_read(gint fd, gchar command, gchar *buffer, gint bu
     gint bytes_read = 0;
     gint total_bytes = 0;
     
-    while (total_bytes < buffer_size - 1) {
+    g_message("Waiting for response (timeout: %d ms)", timeout_ms);
+    
+    /* For Speeduino, we know the 'Q' command returns exactly 16 bytes */
+    gint max_iterations = 10;  /* Prevent infinite loops */
+    gint iteration = 0;
+    
+    while (total_bytes < buffer_size - 1 && iteration < max_iterations) {
+        iteration++;
+        
         gint result = select(fd + 1, &read_fds, NULL, NULL, &timeout);
         
         if (result == 0) {
             /* Timeout */
+            g_message("Timeout waiting for response after %d bytes (iteration %d)", total_bytes, iteration);
             break;
         } else if (result < 0) {
             g_warning("Select error: %s", strerror(errno));
@@ -185,18 +184,63 @@ static gint send_command_and_read(gint fd, gchar command, gchar *buffer, gint bu
         
         bytes_read = read(fd, buffer + total_bytes, buffer_size - total_bytes - 1);
         if (bytes_read <= 0) {
+            g_message("Read returned %d bytes (iteration %d)", bytes_read, iteration);
+            /* For Speeduino, if we've got some data, wait a bit more */
+            if (total_bytes > 0) {
+                g_usleep(50000);  /* Wait 50ms */
+                continue;
+            }
             break;
         }
         
         total_bytes += bytes_read;
+        g_message("Received %d bytes (total: %d, iteration: %d)", bytes_read, total_bytes, iteration);
+        
+        // Print the latest data received
+        GString *latest_hex = g_string_new("Latest bytes: ");
+        for (gint i = total_bytes - bytes_read; i < total_bytes; i++) {
+            g_string_append_printf(latest_hex, "%02X ", (guchar)buffer[i]);
+        }
+        g_message("%s", latest_hex->str);
+        g_string_free(latest_hex, TRUE);
         
         /* Check if we have a complete response */
         if (total_bytes > 0 && (buffer[total_bytes - 1] == '\n' || buffer[total_bytes - 1] == '\r')) {
+            g_message("Found line terminator, response complete");
             break;
         }
+        
+        /* SPEEDUINO FIX: Check for expected Speeduino response */
+        if (total_bytes >= 9 && strncmp(buffer, "speeduino", 9) == 0) {
+            g_message("Found Speeduino response start, checking for complete response");
+            /* Wait a bit more to get the full response */
+            if (total_bytes >= 16) {
+                g_message("Found complete Speeduino Q response (16+ bytes)");
+                break;
+            }
+        }
+        
+        /* Reset timeout for next iteration */
+        timeout.tv_sec = timeout_ms / 1000;
+        timeout.tv_usec = (timeout_ms % 1000) * 1000;
+        FD_ZERO(&read_fds);
+        FD_SET(fd, &read_fds);
     }
     
     buffer[total_bytes] = '\0';
+    
+    if (total_bytes > 0) {
+        g_message("Response received (%d bytes): '%s'", total_bytes, buffer);
+        
+        // Print hex dump for debugging
+        GString *hex_dump = g_string_new("Hex: ");
+        for (gint i = 0; i < total_bytes; i++) {
+            g_string_append_printf(hex_dump, "%02X ", (guchar)buffer[i]);
+        }
+        g_message("%s", hex_dump->str);
+        g_string_free(hex_dump, TRUE);
+    }
+    
     return total_bytes;
 }
 
@@ -241,11 +285,16 @@ static gboolean probe_device_with_command(const gchar *device_path, gint baud_ra
     close(fd);
     
     if (bytes_read < probe->response_min_length) {
+        g_message("❌ Response too short: got %d bytes, expected at least %d", bytes_read, probe->response_min_length);
         return FALSE;
     }
     
+    g_message("🔍 Checking response against expected pattern '%s'", probe->expected_response);
+    g_message("🔍 Response buffer: '%s'", buffer);
+    
     /* Check if response matches expected pattern */
     if (strstr(buffer, probe->expected_response) != NULL) {
+        g_message("✅ Found expected response pattern '%s'", probe->expected_response);
         /* Found match! */
         result->ecu_type = probe->type;
         result->device_path = g_strdup(device_path);
@@ -257,30 +306,28 @@ static gboolean probe_device_with_command(const gchar *device_path, gint baud_ra
         return TRUE;
     }
     
+    g_message("❌ Expected pattern '%s' not found in response '%s'", probe->expected_response, buffer);
+    
     /* SPECIAL CASE: Arduino-based devices (ACM) might send binary data instead of text */
     if (probe->type == ECU_TYPE_SPEEDUINO && strstr(device_path, "ACM") != NULL && bytes_read > 0) {
-        g_message("Found Arduino device at %s with binary response (%d bytes), assuming Speeduino", device_path, bytes_read);
-        result->ecu_type = probe->type;
-        result->device_path = g_strdup(device_path);
-        result->baud_rate = baud_rate;
-        result->ecu_name = g_strdup("Speeduino (Arduino-based)");
-        result->signature = g_strdup_printf("Binary response from %s", device_path);
-        result->confidence = 80; /* Good confidence for Arduino devices */
+        g_message("Found Arduino device at %s with binary response (%d bytes)", device_path, bytes_read);
         
-        return TRUE;
-    }
-    
-    /* TEMPORARY FIX: If we get any response for Speeduino detection, consider it a match */
-    if (probe->type == ECU_TYPE_SPEEDUINO && bytes_read > 0) {
-        g_message("Found potential Speeduino with non-text response (%d bytes), treating as match", bytes_read);
-        result->ecu_type = probe->type;
-        result->device_path = g_strdup(device_path);
-        result->baud_rate = baud_rate;
-        result->ecu_name = g_strdup("Speeduino (Non-standard response)");
-        result->signature = g_strdup_printf("Binary response: %d bytes", bytes_read);
-        result->confidence = 75; /* Lower confidence for non-standard response */
-        
-        return TRUE;
+        /* For Arduino devices, we need to validate that it's actually a Speeduino */
+        /* Create a result with reasonable confidence for Arduino devices */
+        if (bytes_read >= 5) {  /* Speeduino Q command returns at least 5 bytes */
+            g_message("Binary response length suggests Speeduino, creating high-confidence result");
+            result->ecu_type = probe->type;
+            result->device_path = g_strdup(device_path);
+            result->baud_rate = baud_rate;
+            result->ecu_name = g_strdup("Speeduino (Arduino-based)");
+            result->signature = g_strdup_printf("Binary response from %s", device_path);
+            result->confidence = 95; /* High confidence for proper binary response on Arduino device */
+            
+            return TRUE;
+        } else {
+            g_message("Binary response too short (%d bytes), not confident this is Speeduino", bytes_read);
+            return FALSE;
+        }
     }
     
     return FALSE;
@@ -308,9 +355,13 @@ GList *ecu_detector_scan_all_devices(void)
         for (gint cmd_idx = 0; cmd_idx < num_probe_commands; cmd_idx++) {
             const EcuProbeCommand *probe = &probe_commands[cmd_idx];
             
+            g_message("Trying %s detection on %s", probe->name, device_path);
+            
             /* Try each baud rate for this command */
             for (gint baud_idx = 0; probe->baud_rates[baud_idx] != 0; baud_idx++) {
                 gint baud_rate = probe->baud_rates[baud_idx];
+                
+                g_message("Testing %s at %d baud...", device_path, baud_rate);
                 
                 EcuDetectionResult *result = g_new0(EcuDetectionResult, 1);
                 
@@ -324,6 +375,7 @@ GList *ecu_detector_scan_all_devices(void)
                     /* Found ECU on this device, move to next device */
                     goto next_device;
                 } else {
+                    g_message("❌ No response for %s at %d baud", probe->name, baud_rate);
                     g_free(result);
                 }
             }
@@ -349,7 +401,6 @@ const gchar *ecu_detector_get_type_name(EcuType type)
         case ECU_TYPE_MS1:        return "MegaSquirt 1";
         case ECU_TYPE_MS2:        return "MegaSquirt 2";
         case ECU_TYPE_MS3:        return "MegaSquirt 3";
-        case ECU_TYPE_JIMSTIM:    return "JimStim";
         case ECU_TYPE_UNKNOWN:    return "Unknown";
         default:                  return "Unknown";
     }
@@ -385,6 +436,13 @@ EcuDetectionResult *ecu_detector_get_best_ecu(GList *results)
     for (GList *l = results; l != NULL; l = l->next) {
         EcuDetectionResult *result = (EcuDetectionResult *)l->data;
         
+        /* Only consider ECUs with high confidence to prevent incorrect connections */
+        if (result->confidence < 80) {
+            g_message("Skipping ECU %s at %s with confidence %d%% (requires 80%%)", 
+                     result->ecu_name, result->device_path, result->confidence);
+            continue;
+        }
+        
         gint score = result->confidence;
         
         /* Prefer certain ECU types */
@@ -393,7 +451,6 @@ EcuDetectionResult *ecu_detector_get_best_ecu(GList *results)
             case ECU_TYPE_MS2:        score += 8;  break;  /* Then MS2 */
             case ECU_TYPE_MS3:        score += 9;  break;  /* Then MS3 */
             case ECU_TYPE_MS1:        score += 5;  break;  /* Then MS1 */
-            case ECU_TYPE_JIMSTIM:    score += 3;  break;  /* JimStim is simulator */
             default:                  break;
         }
         
@@ -404,4 +461,62 @@ EcuDetectionResult *ecu_detector_get_best_ecu(GList *results)
     }
     
     return best;
+}
+
+/* Test a specific device at a specific baud rate */
+EcuDetectionResult *ecu_detector_test_device(const gchar *device_path, gint baud_rate)
+{
+    if (!device_path) {
+        g_warning("🔍 ecu_detector_test_device: device_path is NULL");
+        return NULL;
+    }
+    
+    g_message("🔍 Testing device %s at %d baud...", device_path, baud_rate);
+    
+    /* Skip if device doesn't exist */
+    if (!g_file_test(device_path, G_FILE_TEST_EXISTS)) {
+        g_warning("🔍 Device %s does not exist", device_path);
+        return NULL;
+    }
+    
+    g_message("🔍 Device %s exists, starting probe command tests...", device_path);
+    
+    /* Try each probe command */
+    for (gint cmd_idx = 0; cmd_idx < num_probe_commands; cmd_idx++) {
+        const EcuProbeCommand *probe = &probe_commands[cmd_idx];
+        
+        g_message("🔍 Testing probe command %d: %s (command: '%c')", cmd_idx, probe->name, probe->command);
+        
+        /* Check if this baud rate is supported for this probe command */
+        gboolean baud_supported = FALSE;
+        g_message("🔍 Checking if baud rate %d is supported for %s...", baud_rate, probe->name);
+        for (gint baud_idx = 0; probe->baud_rates[baud_idx] != 0; baud_idx++) {
+            g_message("🔍 Probe %s supports baud rate %d", probe->name, probe->baud_rates[baud_idx]);
+            if (probe->baud_rates[baud_idx] == baud_rate) {
+                baud_supported = TRUE;
+                break;
+            }
+        }
+        
+        if (!baud_supported) {
+            g_message("🔍 Baud rate %d not supported for %s, skipping", baud_rate, probe->name);
+            continue;
+        }
+        
+        g_message("🔍 Baud rate %d is supported for %s, trying probe...", baud_rate, probe->name);
+        
+        EcuDetectionResult *result = g_new0(EcuDetectionResult, 1);
+        
+        if (probe_device_with_command(device_path, baud_rate, probe, result)) {
+            g_message("🔍 ✅ Successfully detected %s at %s (%d baud)", 
+                     result->ecu_name, device_path, baud_rate);
+            return result;
+        } else {
+            g_message("🔍 ❌ No response from %s for %s at %d baud", device_path, probe->name, baud_rate);
+            g_free(result);
+        }
+    }
+    
+    g_message("🔍 ❌ No ECU detected at %s (%d baud)", device_path, baud_rate);
+    return NULL;
 }

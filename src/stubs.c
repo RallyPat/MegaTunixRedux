@@ -24,6 +24,15 @@ typedef struct {
     gchar *error_message;
 } EcuDetectionThreadResult;
 
+// Structure for passing user selections to detection thread
+typedef struct {
+    GtkBuilder *builder;
+    gchar *selected_port;
+    gchar *selected_baud;
+    gboolean auto_detect_port;
+    gboolean auto_detect_baud;
+} EcuConnectionRequest;
+
 // Helper function prototypes
 static gboolean simulate_connection_result(gpointer user_data);
 static gboolean update_runtime_data_simulation(gpointer user_data);
@@ -34,6 +43,180 @@ static gboolean ecu_detection_thread_complete(gpointer user_data);
 static gboolean start_ecu_detection(gpointer user_data);
 static gboolean ecu_detection_success(gpointer user_data);
 static gboolean offer_simulation_mode(gpointer user_data);
+
+// Natural sorting comparison function for device names
+static gint natural_string_compare(gconstpointer a, gconstpointer b)
+{
+    const gchar *str1 = (const gchar*)a;
+    const gchar *str2 = (const gchar*)b;
+    
+    // Extract numeric parts for natural sorting
+    const gchar *ptr1 = str1;
+    const gchar *ptr2 = str2;
+    
+    while (*ptr1 && *ptr2) {
+        if (g_ascii_isdigit(*ptr1) && g_ascii_isdigit(*ptr2)) {
+            // Both are digits, compare numerically
+            glong num1 = g_ascii_strtoll(ptr1, (gchar**)&ptr1, 10);
+            glong num2 = g_ascii_strtoll(ptr2, (gchar**)&ptr2, 10);
+            
+            if (num1 != num2) {
+                return (num1 < num2) ? -1 : 1;
+            }
+        } else if (*ptr1 == *ptr2) {
+            // Same character, move to next
+            ptr1++;
+            ptr2++;
+        } else {
+            // Different characters, compare directly
+            return (*ptr1 < *ptr2) ? -1 : 1;
+        }
+    }
+    
+    // One string is a prefix of the other
+    return (*ptr1 == '\0') ? ((*ptr2 == '\0') ? 0 : -1) : 1;
+}
+
+// Helper function to get list of serial ports
+static GList *get_serial_ports(void)
+{
+    GList *devices = NULL;
+    
+    // Scan /dev/ directory for serial devices
+    GDir *dev_dir = g_dir_open("/dev", 0, NULL);
+    if (dev_dir) {
+        const gchar *filename;
+        
+        // Collect all potential serial devices
+        while ((filename = g_dir_read_name(dev_dir)) != NULL) {
+            if (g_str_has_prefix(filename, "ttyUSB") ||
+                g_str_has_prefix(filename, "ttyACM") ||
+                g_str_has_prefix(filename, "ttyS") ||
+                g_str_has_prefix(filename, "ttyAMA") ||
+                g_str_has_prefix(filename, "ttyO") ||     /* BeagleBone */
+                g_str_has_prefix(filename, "ttymxc") ||   /* i.MX */
+                g_str_has_prefix(filename, "ttyTHS")) {   /* Tegra */
+                
+                gchar *device_path = g_strdup_printf("/dev/%s", filename);
+                
+                // Check if device exists (serial devices are character devices, not regular files)
+                if (g_file_test(device_path, G_FILE_TEST_EXISTS)) {
+                    devices = g_list_insert_sorted(devices, device_path, natural_string_compare);
+                } else {
+                    g_free(device_path);
+                }
+            }
+        }
+        g_dir_close(dev_dir);
+    } else {
+        // Fallback: check common serial device paths
+        const gchar *device_paths[] = {
+            "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3",
+            "/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyACM2", "/dev/ttyACM3",
+            "/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3",
+            "/dev/ttyAMA0", "/dev/ttyAMA1",  /* Raspberry Pi */
+            NULL
+        };
+        
+        for (gint i = 0; device_paths[i] != NULL; i++) {
+            if (g_file_test(device_paths[i], G_FILE_TEST_EXISTS)) {
+                devices = g_list_insert_sorted(devices, g_strdup(device_paths[i]), natural_string_compare);
+            }
+        }
+    }
+    
+    return devices;
+}
+
+// Helper function to populate available serial ports
+static void populate_serial_ports(GtkComboBoxText *combo)
+{
+    if (!combo) return;
+    
+    // Clear existing items (except "Auto Detect")
+    gtk_combo_box_text_remove_all(combo);
+    
+    // Add "Auto Detect" as first option
+    gtk_combo_box_text_append(combo, "auto", "Auto Detect");
+    
+    // Scan /dev/ directory for serial devices
+    GDir *dev_dir = g_dir_open("/dev", 0, NULL);
+    if (dev_dir) {
+        const gchar *filename;
+        GList *devices = NULL;
+        
+        // Collect all potential serial devices
+        while ((filename = g_dir_read_name(dev_dir)) != NULL) {
+            if (g_str_has_prefix(filename, "ttyUSB") ||
+                g_str_has_prefix(filename, "ttyACM") ||
+                g_str_has_prefix(filename, "ttyS") ||
+                g_str_has_prefix(filename, "ttyAMA") ||
+                g_str_has_prefix(filename, "ttyO") ||     /* BeagleBone */
+                g_str_has_prefix(filename, "ttymxc") ||   /* i.MX */
+                g_str_has_prefix(filename, "ttyTHS")) {   /* Tegra */
+                
+                gchar *device_path = g_strdup_printf("/dev/%s", filename);
+                
+                // Check if device exists (serial devices are character devices, not regular files)
+                if (g_file_test(device_path, G_FILE_TEST_EXISTS)) {
+                    devices = g_list_insert_sorted(devices, device_path, natural_string_compare);
+                } else {
+                    g_free(device_path);
+                }
+            }
+        }
+        g_dir_close(dev_dir);
+        
+        // Add sorted devices to combo box
+        for (GList *item = devices; item != NULL; item = item->next) {
+            const gchar *device_path = (const gchar *)item->data;
+            gtk_combo_box_text_append(combo, device_path, device_path);
+        }
+        
+        // Clean up
+        g_list_free_full(devices, g_free);
+    } else {
+        // Fallback: check common serial device paths
+        const gchar *device_paths[] = {
+            "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3",
+            "/dev/ttyACM0", "/dev/ttyACM1", "/dev/ttyACM2", "/dev/ttyACM3",
+            "/dev/ttyS0", "/dev/ttyS1", "/dev/ttyS2", "/dev/ttyS3",
+            "/dev/ttyAMA0", "/dev/ttyAMA1",  /* Raspberry Pi */
+            NULL
+        };
+        
+        for (gint i = 0; device_paths[i] != NULL; i++) {
+            if (g_file_test(device_paths[i], G_FILE_TEST_EXISTS)) {
+                gtk_combo_box_text_append(combo, device_paths[i], device_paths[i]);
+            }
+        }
+    }
+    
+    // Set "Auto Detect" as default
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+}
+
+// Helper function to populate baud rates
+static void populate_baud_rates(GtkComboBoxText *combo)
+{
+    if (!combo) return;
+    
+    // Clear existing items
+    gtk_combo_box_text_remove_all(combo);
+    
+    // Add "Auto Detect" as first option
+    gtk_combo_box_text_append(combo, "auto", "Auto Detect");
+    
+    // Add standard baud rates
+    gtk_combo_box_text_append(combo, "115200", "115200");
+    gtk_combo_box_text_append(combo, "57600", "57600");
+    gtk_combo_box_text_append(combo, "38400", "38400");
+    gtk_combo_box_text_append(combo, "19200", "19200");
+    gtk_combo_box_text_append(combo, "9600", "9600");
+    
+    // Set "Auto Detect" as default
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+}
 
 // Dashboard stub functions - temporarily disabled for GTK4 event system porting
 
@@ -291,18 +474,50 @@ G_MODULE_EXPORT void on_connect_clicked(GtkButton *button, gpointer user_data)
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
     GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
     GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
-    GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
+    GtkWidget *port_combo = GTK_WIDGET(gtk_builder_get_object(builder, "port_combo"));
+    GtkWidget *baud_combo = GTK_WIDGET(gtk_builder_get_object(builder, "baud_combo"));
     GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
     GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
     
-    // Clear previous information
-    if (port_entry) {
-        GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
-        if (buffer) {
-            gtk_entry_buffer_set_text(buffer, "", -1);
+    // Check what user has selected BEFORE updating dropdowns
+    gchar *selected_port = NULL;
+    gchar *selected_baud = NULL;
+    gboolean auto_detect_port = TRUE;
+    gboolean auto_detect_baud = TRUE;
+    
+    if (port_combo) {
+        selected_port = gtk_combo_box_get_active_id(GTK_COMBO_BOX(port_combo));
+        if (selected_port && g_strcmp0(selected_port, "auto") != 0) {
+            auto_detect_port = FALSE;
+            g_message("User selected specific port: %s", selected_port);
         }
     }
     
+    if (baud_combo) {
+        selected_baud = gtk_combo_box_get_active_id(GTK_COMBO_BOX(baud_combo));
+        if (selected_baud && g_strcmp0(selected_baud, "auto") != 0) {
+            auto_detect_baud = FALSE;
+            g_message("User selected specific baud: %s", selected_baud);
+        }
+    }
+    
+    // Update the dropdowns to show current available devices but preserve selection
+    if (port_combo) {
+        populate_serial_ports(GTK_COMBO_BOX_TEXT(port_combo));
+        // Restore user's selection if it was manual
+        if (selected_port && g_strcmp0(selected_port, "auto") != 0) {
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(port_combo), selected_port);
+        }
+    }
+    if (baud_combo) {
+        populate_baud_rates(GTK_COMBO_BOX_TEXT(baud_combo));
+        // Restore user's selection if it was manual
+        if (selected_baud && g_strcmp0(selected_baud, "auto") != 0) {
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(baud_combo), selected_baud);
+        }
+    }
+    
+    // Clear previous information
     if (ecu_sig_label) {
         gtk_label_set_text(GTK_LABEL(ecu_sig_label), "Signature: Unknown");
     }
@@ -312,7 +527,7 @@ G_MODULE_EXPORT void on_connect_clicked(GtkButton *button, gpointer user_data)
     
     // Update UI for detection phase
     if (status_label) {
-        gtk_label_set_text(GTK_LABEL(status_label), "Detecting ECUs...");
+        gtk_label_set_text(GTK_LABEL(status_label), "Detecting ECUs... Please Wait");
     }
     
     // Disable connect button during detection
@@ -334,48 +549,123 @@ G_MODULE_EXPORT void on_connect_clicked(GtkButton *button, gpointer user_data)
         
         // Show error and reset UI
         if (status_label) {
-            gtk_label_set_text(GTK_LABEL(status_label), "ECU Manager initialization failed - Starting simulation");
+            gtk_label_set_text(GTK_LABEL(status_label), "ECU Manager initialization failed");
         }
         if (connect_btn) {
-            gtk_widget_set_sensitive(connect_btn, FALSE);
+            gtk_widget_set_sensitive(connect_btn, TRUE);
         }
         
-        // Skip real detection and go straight to simulation
-        g_timeout_add(1000, (GSourceFunc)simulate_connection_result, builder);
+        // Do not fall back to simulation mode - user must have real hardware
+        g_message("ECU manager initialization failed - simulation mode is disabled");
         return;
     }
     
     // Run ECU detection in background thread to avoid blocking UI
-    g_thread_new("ecu_detection", ecu_detection_thread, builder);
+    EcuConnectionRequest *request = g_new0(EcuConnectionRequest, 1);
+    request->builder = builder;
+    request->selected_port = g_strdup(selected_port);
+    request->selected_baud = g_strdup(selected_baud);
+    request->auto_detect_port = auto_detect_port;
+    request->auto_detect_baud = auto_detect_baud;
+    
+    g_thread_new("ecu_detection", ecu_detection_thread, request);
 }
 
 // Background thread for ECU detection
 static gpointer ecu_detection_thread(gpointer user_data)
 {
-    GtkBuilder *builder = GTK_BUILDER(user_data);
-    if (!builder) return NULL;
+    EcuConnectionRequest *request = (EcuConnectionRequest *)user_data;
+    if (!request || !request->builder) {
+        if (request) {
+            g_free(request->selected_port);
+            g_free(request->selected_baud);
+            g_free(request);
+        }
+        return NULL;
+    }
+    
+    GtkBuilder *builder = request->builder;
     
     g_message("Running ECU detection scan in background thread...");
+    g_message("Connection request: port=%s (auto=%s), baud=%s (auto=%s)",
+             request->selected_port ? request->selected_port : "NULL",
+             request->auto_detect_port ? "YES" : "NO",
+             request->selected_baud ? request->selected_baud : "NULL",
+             request->auto_detect_baud ? "YES" : "NO");
     
     // Add timeout protection - if detection takes more than 10 seconds, abort
     GTimer *timer = g_timer_new();
     g_timer_start(timer);
     
-    // Add debug output
-    g_message("About to call ecu_manager_auto_connect...");
-    
-    // Try to auto-connect (this includes detection)
+    // Try to connect using user's selection or auto-detect
     GError *error = NULL;
     gboolean connection_result = FALSE;
     
-    // Wrap the detection in a timeout check
-    connection_result = ecu_manager_auto_connect(&error);
+    if (request->auto_detect_port && request->auto_detect_baud) {
+        // Full auto-detect mode
+        g_message("Using full auto-detect mode");
+        connection_result = ecu_manager_auto_connect(&error);
+    } else if (!request->auto_detect_port && !request->auto_detect_baud) {
+        // Full manual mode - both port and baud specified
+        g_message("Manual connection mode: port=%s, baud=%s", 
+                 request->selected_port, request->selected_baud);
+        gint baud_rate = g_ascii_strtoll(request->selected_baud, NULL, 10);
+        g_message("🔧 Parsed baud rate: %d from string '%s'", baud_rate, request->selected_baud);
+        if (baud_rate == 0) {
+            g_warning("🔧 Failed to parse baud rate from '%s'", request->selected_baud);
+        }
+        connection_result = ecu_manager_manual_connect(request->selected_port, baud_rate, &error);
+    } else {
+        // Mixed mode - implement proper mixed mode support
+        g_message("Mixed manual/auto mode: port=%s (auto=%s), baud=%s (auto=%s)", 
+                 request->selected_port ? request->selected_port : "auto",
+                 request->auto_detect_port ? "YES" : "NO",
+                 request->selected_baud ? request->selected_baud : "auto",
+                 request->auto_detect_baud ? "YES" : "NO");
+        
+        if (!request->auto_detect_port && request->auto_detect_baud) {
+            // Manual port, auto baud - try common baud rates on specified port
+            g_message("Trying manual port %s with auto baud detection", request->selected_port);
+            gint common_bauds[] = {115200, 57600, 38400, 19200, 9600, 0};
+            for (gint i = 0; common_bauds[i] != 0; i++) {
+                g_message("Trying %s at %d baud...", request->selected_port, common_bauds[i]);
+                connection_result = ecu_manager_manual_connect(request->selected_port, common_bauds[i], &error);
+                if (connection_result) {
+                    g_message("✅ Connected to %s at %d baud", request->selected_port, common_bauds[i]);
+                    break;
+                }
+                if (error) {
+                    g_clear_error(&error);
+                }
+            }
+        } else if (request->auto_detect_port && !request->auto_detect_baud) {
+            // Auto port, manual baud - scan all ports with specified baud
+            g_message("Trying auto port detection with manual baud %s", request->selected_baud);
+            gint baud_rate = g_ascii_strtoll(request->selected_baud, NULL, 10);
+            
+            // Get list of serial ports and try each one
+            GList *serial_ports = get_serial_ports();
+            for (GList *l = serial_ports; l != NULL; l = l->next) {
+                const gchar *port = (const gchar *)l->data;
+                g_message("Trying %s at %d baud...", port, baud_rate);
+                connection_result = ecu_manager_manual_connect(port, baud_rate, &error);
+                if (connection_result) {
+                    g_message("✅ Connected to %s at %d baud", port, baud_rate);
+                    break;
+                }
+                if (error) {
+                    g_clear_error(&error);
+                }
+            }
+            g_list_free_full(serial_ports, g_free);
+        }
+    }
     
     gdouble elapsed = g_timer_elapsed(timer, NULL);
     g_timer_destroy(timer);
     
-    g_message("ecu_manager_auto_connect completed in %.2f seconds", elapsed);
-    g_message("ecu_manager_auto_connect returned: %s", connection_result ? "SUCCESS" : "FAILED");
+    g_message("ECU connection attempt completed in %.2f seconds", elapsed);
+    g_message("Connection result: %s", connection_result ? "SUCCESS" : "FAILED");
     if (error) {
         g_message("Error details: %s", error->message);
     }
@@ -387,6 +677,11 @@ static gpointer ecu_detection_thread(gpointer user_data)
     result->error_message = error ? g_strdup(error->message) : NULL;
     
     g_clear_error(&error);
+    
+    // Clean up request
+    g_free(request->selected_port);
+    g_free(request->selected_baud);
+    g_free(request);
     
     // Update UI from main thread
     g_idle_add((GSourceFunc)ecu_detection_thread_complete, result);
@@ -424,8 +719,8 @@ static gboolean ecu_detection_thread_complete(gpointer user_data)
             gtk_widget_set_sensitive(connect_btn, TRUE);
         }
         
-        // Show simulation option after 2 seconds
-        g_timeout_add(2000, (GSourceFunc)offer_simulation_mode, builder);
+        // Do not offer simulation mode - user must have real hardware
+        g_message("Connection failed - simulation mode is disabled");
     }
     
     g_free(result->error_message);
@@ -441,6 +736,11 @@ static gboolean start_ecu_detection(gpointer user_data)
     
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
     GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
+    GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
+    GtkWidget *port_combo = GTK_WIDGET(gtk_builder_get_object(builder, "port_combo"));
+    GtkWidget *baud_combo = GTK_WIDGET(gtk_builder_get_object(builder, "baud_combo"));
+    GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
+    GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
     
     g_message("Running ECU detection scan...");
     
@@ -471,8 +771,8 @@ static gboolean start_ecu_detection(gpointer user_data)
             gtk_widget_set_sensitive(connect_btn, TRUE);
         }
         
-        // Show simulation option after 2 seconds
-        g_timeout_add(2000, (GSourceFunc)offer_simulation_mode, builder);
+        // Do not offer simulation mode - user must have real hardware
+        g_message("Connection failed - simulation mode is disabled");
     }
     
     return FALSE; // Remove timeout
@@ -487,14 +787,37 @@ static gboolean ecu_detection_success(gpointer user_data)
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
     GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
     GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
-    GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
+    GtkWidget *port_combo = GTK_WIDGET(gtk_builder_get_object(builder, "port_combo"));
+    GtkWidget *baud_combo = GTK_WIDGET(gtk_builder_get_object(builder, "baud_combo"));
     GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
     GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
     
     // Get current ECU info
     const EcuDetectionResult *current_ecu = ecu_manager_get_current_ecu();
+    if (!current_ecu) {
+        g_warning("No current ECU available after connection");
+        // Reset UI to allow retry
+        if (status_label) {
+            gtk_label_set_text(GTK_LABEL(status_label), "Connection failed");
+        }
+        if (connect_btn) {
+            gtk_widget_set_sensitive(connect_btn, TRUE);
+        }
+        return FALSE;
+    }
     
-    // Update status
+    // Check if we can read the firmware version - this validates real communication
+    const gchar *firmware_version = ecu_manager_get_firmware_version();
+    if (!firmware_version) {
+        g_message("Firmware version not available yet, keeping detection message...");
+        // Keep showing detection message and retry after a short delay
+        g_timeout_add(500, (GSourceFunc)ecu_detection_success, builder);
+        return FALSE;
+    }
+    
+    g_message("Firmware version available: %s - connection fully validated", firmware_version);
+    
+    // Update status - now we know we can actually communicate
     if (status_label) {
         gtk_label_set_text(GTK_LABEL(status_label), "Connected (Real Hardware)");
     }
@@ -508,34 +831,37 @@ static gboolean ecu_detection_success(gpointer user_data)
     }
     
     // Show detected device info
-    if (current_ecu) {
-        if (port_entry) {
-            GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
-            if (buffer) {
-                gtk_entry_buffer_set_text(buffer, current_ecu->device_path, -1);
-            }
-        }
-        
-        if (ecu_sig_label) {
-            gchar *sig_text = g_strdup_printf("Signature: %s", current_ecu->signature);
-            gtk_label_set_text(GTK_LABEL(ecu_sig_label), sig_text);
-            g_free(sig_text);
-        }
-        
-        if (fw_ver_label) {
-            const gchar *firmware_version = ecu_manager_get_firmware_version();
-            if (firmware_version) {
-                gchar *ver_text = g_strdup_printf("Version: %s", firmware_version);
-                gtk_label_set_text(GTK_LABEL(fw_ver_label), ver_text);
-                g_free(ver_text);
-            } else {
-                gtk_label_set_text(GTK_LABEL(fw_ver_label), "Version: Reading...");
-            }
-        }
-        
-        g_message("Connected to %s at %s (%d baud)", 
-                 current_ecu->ecu_name, current_ecu->device_path, current_ecu->baud_rate);
+    if (port_combo) {
+        // Clear and add the detected port
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(port_combo));
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(port_combo), 
+                                current_ecu->device_path, current_ecu->device_path);
+        gtk_combo_box_set_active_id(GTK_COMBO_BOX(port_combo), current_ecu->device_path);
     }
+    
+    if (baud_combo) {
+        // Clear and add the detected baud rate
+        gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(baud_combo));
+        gchar *baud_str = g_strdup_printf("%d", current_ecu->baud_rate);
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(baud_combo), baud_str, baud_str);
+        gtk_combo_box_set_active_id(GTK_COMBO_BOX(baud_combo), baud_str);
+        g_free(baud_str);
+    }
+    
+    if (ecu_sig_label) {
+        gchar *sig_text = g_strdup_printf("Signature: %s", current_ecu->signature);
+        gtk_label_set_text(GTK_LABEL(ecu_sig_label), sig_text);
+        g_free(sig_text);
+    }
+    
+    if (fw_ver_label) {
+        gchar *ver_text = g_strdup_printf("Version: %s", firmware_version);
+        gtk_label_set_text(GTK_LABEL(fw_ver_label), ver_text);
+        g_free(ver_text);
+    }
+    
+    g_message("Connected to %s at %s (%d baud) - firmware %s", 
+             current_ecu->ecu_name, current_ecu->device_path, current_ecu->baud_rate, firmware_version);
     
     // Start real runtime data updates
     g_timeout_add(1000, (GSourceFunc)update_runtime_data_real, builder);
@@ -572,7 +898,8 @@ static gboolean simulate_connection_result(gpointer user_data)
     GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
     GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
     GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
-    GtkWidget *port_entry = GTK_WIDGET(gtk_builder_get_object(builder, "port_entry"));
+    GtkWidget *port_combo = GTK_WIDGET(gtk_builder_get_object(builder, "port_combo"));
+    GtkWidget *baud_combo = GTK_WIDGET(gtk_builder_get_object(builder, "baud_combo"));
     GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
     GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
     
@@ -590,11 +917,15 @@ static gboolean simulate_connection_result(gpointer user_data)
     }
     
     // Show simulated device info
-    if (port_entry) {
-        GtkEntryBuffer *buffer = gtk_entry_get_buffer(GTK_ENTRY(port_entry));
-        if (buffer) {
-            gtk_entry_buffer_set_text(buffer, "Simulation Mode", -1);
-        }
+    if (port_combo) {
+        // Add and select simulation mode
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(port_combo), "simulation", "Simulation Mode");
+        gtk_combo_box_set_active_id(GTK_COMBO_BOX(port_combo), "simulation");
+    }
+    
+    if (baud_combo) {
+        // Select 115200 for simulation
+        gtk_combo_box_set_active_id(GTK_COMBO_BOX(baud_combo), "115200");
     }
     
     // Update ECU info labels
@@ -860,6 +1191,8 @@ G_MODULE_EXPORT void on_disconnect_clicked(GtkButton *button, gpointer user_data
         GtkWidget *status_label = GTK_WIDGET(gtk_builder_get_object(builder, "connection_status_label"));
         GtkWidget *connect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "connect_button"));
         GtkWidget *disconnect_btn = GTK_WIDGET(gtk_builder_get_object(builder, "disconnect_button"));
+        GtkWidget *port_combo = GTK_WIDGET(gtk_builder_get_object(builder, "port_combo"));
+        GtkWidget *baud_combo = GTK_WIDGET(gtk_builder_get_object(builder, "baud_combo"));
         GtkWidget *ecu_sig_label = GTK_WIDGET(gtk_builder_get_object(builder, "ecu_signature_label"));
         GtkWidget *fw_ver_label = GTK_WIDGET(gtk_builder_get_object(builder, "firmware_version_label"));
         
@@ -874,6 +1207,16 @@ G_MODULE_EXPORT void on_disconnect_clicked(GtkButton *button, gpointer user_data
         }
         if (disconnect_btn) {
             gtk_widget_set_sensitive(disconnect_btn, FALSE);
+        }
+        
+        // Reset combo boxes to Auto Detect and refresh available ports
+        if (port_combo) {
+            populate_serial_ports(GTK_COMBO_BOX_TEXT(port_combo));
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(port_combo), "auto");
+        }
+        if (baud_combo) {
+            populate_baud_rates(GTK_COMBO_BOX_TEXT(baud_combo));
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(baud_combo), "auto");
         }
         
         // Clear ECU info
@@ -1062,6 +1405,27 @@ G_MODULE_EXPORT gboolean internal_datalog_dump(GtkWidget *widget, gpointer data)
 G_MODULE_EXPORT gboolean autolog_dump(gpointer data) {
     g_message("autolog_dump called (stub)");
     return FALSE;
+}
+
+// Initialize the UI combo boxes with available options
+G_MODULE_EXPORT void initialize_connection_ui(GtkBuilder *builder)
+{
+    if (!builder) return;
+    
+    GtkWidget *port_combo = GTK_WIDGET(gtk_builder_get_object(builder, "port_combo"));
+    GtkWidget *baud_combo = GTK_WIDGET(gtk_builder_get_object(builder, "baud_combo"));
+    
+    // Populate combo boxes and set defaults
+    if (port_combo) {
+        populate_serial_ports(GTK_COMBO_BOX_TEXT(port_combo));
+        // Set Auto Detect as default
+        gtk_combo_box_set_active_id(GTK_COMBO_BOX(port_combo), "auto");
+    }
+    if (baud_combo) {
+        populate_baud_rates(GTK_COMBO_BOX_TEXT(baud_combo));
+        // Set Auto Detect as default
+        gtk_combo_box_set_active_id(GTK_COMBO_BOX(baud_combo), "auto");
+    }
 }
 
 

@@ -226,6 +226,57 @@ gboolean ecu_manager_auto_connect(GError **error)
     return result;
 }
 
+/* Manual connect to specific port and baud rate */
+gboolean ecu_manager_manual_connect(const gchar *device_path, gint baud_rate, GError **error)
+{
+    g_message("🔧 Starting manual connect to %s at %d baud...", device_path, baud_rate);
+    
+    if (g_ecu_manager == NULL) {
+        g_set_error(error, G_IO_ERROR, G_IO_ERROR_NOT_INITIALIZED,
+                   "ECU manager not initialized");
+        return FALSE;
+    }
+    
+    if (g_ecu_manager->connected) {
+        g_message("Already connected to ECU, disconnecting first...");
+        ecu_manager_disconnect();
+    }
+    
+    // Add debugging about the device path
+    g_message("🔧 Checking device path: %s", device_path);
+    if (!g_file_test(device_path, G_FILE_TEST_EXISTS)) {
+        g_warning("🔧 Device path %s does not exist!", device_path);
+        g_set_error(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "Device %s does not exist", device_path);
+        return FALSE;
+    }
+    
+    // Try to detect ECU at specific port and baud rate
+    g_message("🔧 Calling ecu_detector_test_device for %s at %d baud", device_path, baud_rate);
+    EcuDetectionResult *ecu = ecu_detector_test_device(device_path, baud_rate);
+    if (!ecu) {
+        g_warning("🔧 ecu_detector_test_device returned NULL for %s at %d baud", device_path, baud_rate);
+        g_set_error(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                   "No ECU detected at %s (%d baud)", device_path, baud_rate);
+        return FALSE;
+    }
+    
+    g_message("🔧 Detected ECU at manual selection: %s (type: %d)", ecu->ecu_name, ecu->ecu_type);
+    
+    /* Connect to detected ECU */
+    g_message("🔧 Calling ecu_manager_connect_to_ecu...");
+    gboolean result = ecu_manager_connect_to_ecu(ecu, error);
+    
+    if (result) {
+        g_message("🔧 Manual connection successful!");
+    } else {
+        g_warning("🔧 Manual connection failed: %s", error && *error ? (*error)->message : "Unknown error");
+    }
+    
+    ecu_detection_result_free(ecu);
+    return result;
+}
+
 /* Disconnect from current ECU */
 void ecu_manager_disconnect(void)
 {

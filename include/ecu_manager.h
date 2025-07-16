@@ -71,6 +71,15 @@ gboolean ecu_manager_connect_to_ecu(EcuDetectionResult *ecu, GError **error);
 gboolean ecu_manager_auto_connect(GError **error);
 
 /**
+ * Manual connect to specific port and baud rate
+ * @param device_path Device path (e.g., "/dev/ttyUSB0")
+ * @param baud_rate Baud rate (e.g., 115200)
+ * @param error Error location
+ * @return TRUE on success
+ */
+gboolean ecu_manager_manual_connect(const gchar *device_path, gint baud_rate, GError **error);
+
+/**
  * Disconnect from current ECU
  */
 void ecu_manager_disconnect(void);

@@ -270,6 +270,10 @@ void finalize_core_gui(GtkBuilder * builder)
             gtk_check_button_set_active(GTK_CHECK_BUTTON(widget), TRUE);
     }
 
+    // Initialize connection UI combo boxes
+    extern void initialize_connection_ui(GtkBuilder *builder);
+    initialize_connection_ui(builder);
+
     EXIT();
 }
 

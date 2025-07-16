@@ -142,9 +142,11 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="port_entry">
-                                <property name="text">/dev/ttyUSB0</property>
-                                <property name="placeholder-text">Serial device path</property>
+                              <object class="GtkComboBoxText" id="port_combo">
+                                <property name="hexpand">True</property>
+                                <items>
+                                  <item>Auto Detect</item>
+                                </items>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">0</property>
@@ -163,9 +165,16 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="baud_entry">
-                                <property name="text">115200</property>
-                                <property name="placeholder-text">Baud rate</property>
+                              <object class="GtkComboBoxText" id="baud_combo">
+                                <property name="hexpand">True</property>
+                                <items>
+                                  <item>Auto Detect</item>
+                                  <item>115200</item>
+                                  <item>57600</item>
+                                  <item>38400</item>
+                                  <item>19200</item>
+                                  <item>9600</item>
+                                </items>
                                 <layout>
                                   <property name="column">1</property>
                                   <property name="row">1</property>

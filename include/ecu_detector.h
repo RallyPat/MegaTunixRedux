@@ -33,6 +33,14 @@ const gchar *ecu_detector_get_type_name(EcuType type);
 EcuDetectionResult *ecu_detector_get_best_ecu(GList *results);
 
 /**
+ * Test a specific device at a specific baud rate
+ * @param device_path Device path (e.g., "/dev/ttyUSB0")
+ * @param baud_rate Baud rate to test
+ * @return EcuDetectionResult if ECU found, NULL otherwise (caller must free)
+ */
+EcuDetectionResult *ecu_detector_test_device(const gchar *device_path, gint baud_rate);
+
+/**
  * Free a single detection result
  * @param result EcuDetectionResult to free
  */

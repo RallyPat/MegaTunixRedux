@@ -16,7 +16,6 @@ typedef enum {
     ECU_TYPE_MS1,        /* MegaSquirt 1 */
     ECU_TYPE_MS2,        /* MegaSquirt 2 */
     ECU_TYPE_MS3,        /* MegaSquirt 3 */
-    ECU_TYPE_JIMSTIM,    /* JimStim simulator */
     ECU_TYPE_GENERIC     /* Generic/fallback */
 } EcuType;
 
