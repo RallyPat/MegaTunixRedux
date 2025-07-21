@@ -48,7 +48,6 @@ announcement
 megatunix*.tar.gz
 tags
 gmon.out
-docs
 Doxyfile
 doxygen.errors
 *.swp

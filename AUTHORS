@@ -1,78 +1,89 @@
 Lead developer/App creator, owner:
-	David J. Andruczyk <djandruczyk at yahoo dot com>
+	Pat Burke (MegaTunix Redux development with GitHub Copilot assistance)
+
+Original MegaTunix creator:
+	David J. Andruczyk (2002-2012)
 
 Fantastic assistance provided by:
 
-Alan Barrow <alan@pinztrek.com>
+Alan Barrow
 	Massive infusion of goodies for debian/ubuntu building, menus, icons 
 	and other such freedesktop.org stuff that I had not idea how to 
 	do correctly.  He even makes ubuntu liveCD's wiht mtx integrated.
 
-Bruce Bowling <bbowling at earthlink dot net> 
+Bruce Bowling
 	WWW-> http://bgsoflex.com/megasquirt.html
 	Provided PCC sourcecode
 
-Al Grippo <????&????.???>
+Al Grippo
 	WWW-> http://megasquirt.info
 	Provided MS-II API communiation docs and more.
 
-Perry Harrington < pedward at apsoft dot com> 
+Perry Harrington
 	WWW-> http://www.dainst.com
 	Provided headers for manipulating bitfields and various tips/
 	suggestions to make my life much easier.
 
-Dale Anderson <dale_anderson at yahoo dot com
+Dale Anderson
 	Logo Designer, (damn cool logo too..)  Gui suggestions/testing
 
-Joe Mitchel <comicfu at yahoo dot com>
+Joe Mitchel
 	Provided SourceForge Developer level access to the "MegaSquirt"
 	project areas.
 
-Eric Fahlgren <Eric.Fahlgren at mscsoftware dot com>
+Eric Fahlgren
 	Provided MegaTune source code and various assistance
 	along the way...
 	
-Richard Barrington <rich_b_nz at users dot sourceforge dot net>
+Richard Barrington
 	Submitted bug reports,suggested tying cyls in reqd_fuel calc to
 	the cylinders spinbutton in the main gui..  Various other suggestions
 
-silverchris < unknown, via msefi.com >
+silverchris (via msefi.com)
 	Created the Gentoo ebuild for version 0.7.9, which was submitted to 
 	the gentoo bugzilla on 8/13/2005.
 
-Baldur Gisalson <baldur @ ???? )
+Baldur Gisalson
         Tested Megatunix on FreeBSD and assisted with debugging
 
-Keith ?????  (sly4vems, AIM)
+Keith (sly4vems, AIM)
         Helped with Win32 port and debugging/testing
 
-Christopher Mire <cnm3332 at louisiana dot edu> 
+Christopher Mire
 	Wrote the first gauge widget for megatunix of which I built upon
         and wrote GDK routines for low end boxes, and then added more on 
 	with an additional contribution from Ari, below.
 
-Albert Fletcher < unknown >
+Albert Fletcher
         Most generously donated a Apple G4 Mac Mini to be used for 
         megatunix on PPC testing and improvement, which is used to test 
         all OS-X builds.
 
-Ari Karhu <ari at ultimatevw dot com>
+Ari Karhu
 	Provided a gauge widget that I used a large amount of code from and
 	extended to use an XML storage backend
 
-TurboCamaro <msefi.com forum>
+TurboCamaro (msefi.com forum)
 	Created a whole set of AutoMeter SportComp gauges for the new gauge/
 	dashboard code.
 
-Joe <cegpope <at> gmail <dot> com>
+Joe
 	Created ALL the MS-II tabs for me!! (saved me a boatload of work!)
 
-Justin Maiuto <justin<dot>maiuto<at>gmail<dot>com>
+Justin Maiuto
 	Submitted the Speco gauge set, and Gemini dash, as well as provided a 
 	bunch of bugfixes for the Boost tab in MSnS-E, and lookup tables for 
 	400Kpa sensors, and GM/Commodore 3800 V6 MAT/CLT sensors.
 
-YOU could be here!!  Submit patches, dontate applicable hardware, provide 
-assistance and suggestions and you'll make the list, with all the prestige 
-that comes with it... :)
+---
+
+## MegaTunix Redux Contributors
+
+**Redux Development (2025):**
+- Pat Burke with GitHub Copilot assistance
+
+**Contributing to MegaTunix Redux:**
+We welcome contributions to the Redux project! Whether it's code improvements, 
+bug reports, documentation, or testing, all contributions help make MegaTunix 
+Redux better for the ECU tuning community.
 

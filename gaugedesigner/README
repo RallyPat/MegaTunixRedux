@@ -1,8 +1,25 @@
+# MegaTunix Redux - Gauge Designer
 
-Gauge designer tool to make gauge config files for megatunix..  
-It is mostly feature complete, and supports creating rich gauges.  Some
-creative use of the interface may be required to achieve optimal results
+Visual tool for creating custom gauge configurations for MegaTunix Redux.
 
-If you create good looking gauge sets, please contact the author for 
-submitting them into megatunix so that all users can benefit.
+## Overview
 
+The Gauge Designer allows you to create rich, customizable gauge displays for the MegaTunix Redux dashboard. It supports advanced features including:
+
+- Custom gauge layouts and styling
+- Multiple gauge types (analog, digital, bar graphs)
+- Theme support and visual customization
+- Real-time preview capabilities
+
+## Usage
+
+The Gauge Designer is mostly feature complete and supports creating professional-quality gauge sets. Some creative use of the interface may be required to achieve optimal results.
+
+## Contributing Gauge Sets
+
+If you create attractive gauge sets, please consider contributing them to the MegaTunix Redux project so all users can benefit. See the main project README for contribution guidelines.
+
+---
+
+**Original gauge designer by David J. Andruczyk**  
+**Redux modernization by Pat Burke (2025)**

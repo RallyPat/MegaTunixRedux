@@ -1,0 +1,74 @@
+# MegaTunix Redux - ECU Communication Plugins
+
+This directory contains plugin modules for communicating with different ECU types and firmware variants.
+
+## Plugin Architecture
+
+MegaTunix Redux uses a plugin-based architecture for ECU communication, allowing support for multiple ECU types and protocols while maintaining a clean separation of concerns.
+
+## Supported ECUs
+
+### Active Plugins
+
+- **`speeduino/`** - Speeduino ECU support (all firmware versions)
+- **`ms1/`** - MegaSquirt MS1 and MS1/Extra firmware support  
+- **`ms2/`** - MegaSquirt MS2 and MS2/Extra firmware support
+- **`libreems/`** - LibreEMS ECU support
+- **`mscommon/`** - Common MegaSquirt protocol utilities
+
+### Utility Plugins
+
+- **`jimstim/`** - JimStim ECU simulator support
+- **`null/`** - Null plugin for testing and development
+- **`pis/`** - PIS (Programmable Ignition System) support
+
+### Planned Plugins
+
+- **`ms3/`** - MegaSquirt MS3 support (development)
+- **`obd2/`** - Generic OBD-II support
+
+## Plugin Development
+
+Each plugin provides:
+
+1. **Protocol Implementation**: Low-level communication routines
+2. **Data Parsing**: ECU data interpretation and formatting  
+3. **Configuration**: ECU-specific settings and parameters
+4. **Validation**: Data integrity and safety checks
+
+### Plugin Structure
+
+```
+plugin_name/
+├── plugin.c          # Main plugin implementation
+├── protocol.c        # Communication protocol
+├── parser.c          # Data parsing routines
+├── config/           # ECU configuration files
+└── README           # Plugin-specific documentation
+```
+
+### Creating a New Plugin
+
+1. Copy the `null/` plugin as a template
+2. Implement the required interface functions
+3. Add ECU-specific protocol handling
+4. Create configuration files for your ECU
+5. Test thoroughly with hardware
+
+## Plugin Interface
+
+All plugins must implement the standard MegaTunix Redux plugin interface:
+
+- `plugin_init()` - Plugin initialization
+- `plugin_connect()` - Establish ECU connection  
+- `plugin_disconnect()` - Close ECU connection
+- `plugin_read_data()` - Read realtime data
+- `plugin_write_data()` - Write configuration data
+- `plugin_cleanup()` - Plugin cleanup
+
+See individual plugin directories for implementation examples.
+
+---
+
+**Original MegaTunix plugin architecture by David J. Andruczyk**  
+**Redux modernization by Pat Burke (2025)**
