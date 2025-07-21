@@ -62,7 +62,7 @@ pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_ttf
 ### Building
 
 ```bash
-git clone https://github.com/patburke/MegaTunixRedux.git
+git clone https://github.com/RallyPat/MegaTunixRedux.git
 cd MegaTunixRedux
 mkdir build && cd build
 cmake ..
