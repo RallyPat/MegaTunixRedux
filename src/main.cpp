@@ -303,6 +303,11 @@ struct SafeTableAccess {
     }
 };
 
+// Forward declarations for multi-cell selection functions
+void start_multi_selection(int x, int y);
+void update_multi_selection(int x, int y);
+void end_multi_selection();
+
 void render_log_window() {
     // Position the log window at the bottom of the screen
     ImVec2 display_size = ImGui::GetIO().DisplaySize;
@@ -326,11 +331,38 @@ void render_log_window() {
             g_log_index = 0;
         }
         ImGui::SameLine();
+        if (ImGui::Button("Show Debug")) {
+            g_log_filter_level = 3; // Force show high priority messages
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Test Multi-Select")) {
+            // Test multi-cell selection functionality
+            add_log_entry(0, "*** TESTING MULTI-CELL SELECTION ***");
+            if (g_ve_table && g_ve_table_initialized) {
+                start_multi_selection(5, 5);
+                update_multi_selection(8, 8);
+                add_log_entry(0, "*** TEST SELECTION CREATED *** - Should see cyan borders around cells [5,5] to [8,8]");
+            } else {
+                add_log_entry(2, "*** TEST FAILED *** - VE table not initialized");
+            }
+        }
+        ImGui::SameLine();
         ImGui::Text("Filter:");
         ImGui::SameLine();
         const char* filter_items[] = {"All", "Warning+", "Error Only", "High Priority Only"};
-        ImGui::SetNextItemWidth(120);
-        ImGui::Combo("##filter", &g_log_filter_level, filter_items, IM_ARRAYSIZE(filter_items));
+        ImGui::SetNextItemWidth(150);
+        if (ImGui::BeginCombo("##filter", filter_items[g_log_filter_level])) {
+            for (int i = 0; i < IM_ARRAYSIZE(filter_items); i++) {
+                const bool is_selected = (g_log_filter_level == i);
+                if (ImGui::Selectable(filter_items[i], is_selected)) {
+                    g_log_filter_level = i;
+                }
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
         
         ImGui::Separator();
         
@@ -437,6 +469,7 @@ bool is_cell_in_selection(int x, int y);
 void get_selection_bounds(int* min_x, int* min_y, int* max_x, int* max_y);
 int get_selection_cell_count();
 void apply_operation_to_selection(TableOperation operation, float value);
+void smooth_selection();
 
 int main(int argc, char* argv[]) {
     printf("MegaTunix Redux - ImGui Version\n");
@@ -895,24 +928,85 @@ void handle_events() {
                         
                         switch (event.key.keysym.sym) {
                             case SDLK_UP:
-                                g_selected_cell_y = fmax(0, g_selected_cell_y - 1);
+                                if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
+                                    // Extend selection up
+                                    update_multi_selection(g_selected_cell_x, fmax(0, g_selected_cell_y - 1));
+                                    g_selected_cell_y = fmax(0, g_selected_cell_y - 1);
+                                    add_log_entry(0, "Multi-selection: Extended UP to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
+                                    // Ctrl+Shift+Up: Start multi-cell selection up
+                                    add_log_entry(0, "*** KEYBOARD MULTI-SELECTION TRIGGERED *** - Ctrl+Shift+Up");
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                    }
+                                    update_multi_selection(g_selected_cell_x, fmax(0, g_selected_cell_y - 1));
+                                    g_selected_cell_y = fmax(0, g_selected_cell_y - 1);
+                                    add_log_entry(0, "Multi-selection: Started UP to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else {
+                                    g_selected_cell_y = fmax(0, g_selected_cell_y - 1);
+                                    add_log_entry(0, "Navigation: Moved UP to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                }
                                 navigation_handled = true;
-                                add_log_entry(0, "Navigation: Moved UP to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 break;
                             case SDLK_DOWN:
-                                g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
+                                    // Extend selection down
+                                    update_multi_selection(g_selected_cell_x, fmin(g_ve_table->height - 1, g_selected_cell_y + 1));
+                                    g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                    add_log_entry(0, "Multi-selection: Extended DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
+                                    // Ctrl+Shift+Down: Start multi-cell selection down
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                    }
+                                    update_multi_selection(g_selected_cell_x, fmin(g_ve_table->height - 1, g_selected_cell_y + 1));
+                                    g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                    add_log_entry(0, "Multi-selection: Started DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else {
+                                    g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                    add_log_entry(0, "Navigation: Moved DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                }
                                 navigation_handled = true;
-                                add_log_entry(0, "Navigation: Moved DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 break;
                             case SDLK_LEFT:
-                                g_selected_cell_x = fmax(0, g_selected_cell_x - 1);
+                                if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
+                                    // Extend selection left
+                                    update_multi_selection(fmax(0, g_selected_cell_x - 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmax(0, g_selected_cell_x - 1);
+                                    add_log_entry(0, "Multi-selection: Extended LEFT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
+                                    // Ctrl+Shift+Left: Start multi-cell selection left
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                    }
+                                    update_multi_selection(fmax(0, g_selected_cell_x - 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmax(0, g_selected_cell_x - 1);
+                                    add_log_entry(0, "Multi-selection: Started LEFT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else {
+                                    g_selected_cell_x = fmax(0, g_selected_cell_x - 1);
+                                    add_log_entry(0, "Navigation: Moved LEFT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                }
                                 navigation_handled = true;
-                                add_log_entry(0, "Navigation: Moved LEFT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 break;
                             case SDLK_RIGHT:
-                                g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
+                                    // Extend selection right
+                                    update_multi_selection(fmin(g_ve_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                    add_log_entry(0, "Multi-selection: Extended RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
+                                    // Ctrl+Shift+Right: Start multi-cell selection right
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                    }
+                                    update_multi_selection(fmin(g_ve_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                    add_log_entry(0, "Multi-selection: Started RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else {
+                                    g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                    add_log_entry(0, "Navigation: Moved RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                }
                                 navigation_handled = true;
-                                add_log_entry(0, "Navigation: Moved RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 break;
                             case SDLK_TAB:
                                 if (event.key.keysym.mod & KMOD_SHIFT) {
@@ -938,6 +1032,19 @@ void handle_events() {
                                 }
                                 navigation_handled = true;
                                 add_log_entry(0, "Navigation: Tab to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                break;
+                            case SDLK_ESCAPE:
+                                // Escape: Clear multi-cell selection or cancel editing
+                                if (g_multi_selection.active) {
+                                    clear_multi_selection();
+                                    add_log_entry(0, "Multi-cell selection cleared");
+                                } else if (g_cell_editing) {
+                                    g_cell_editing = false;
+                                    g_show_input_field = false;
+                                    g_input_field_focused = false;
+                                    add_log_entry(0, "Cell editing cancelled");
+                                }
+                                navigation_handled = true;
                                 break;
                         }
                     }
@@ -1050,9 +1157,19 @@ void handle_events() {
                                 
                             case TABLE_OP_INTERPOLATE_H:
                             case TABLE_OP_INTERPOLATE_V:
+                                add_log_entry(0, "Directional interpolation '%s' triggered - implementation pending", 
+                                            imgui_key_bindings_get_operation_name(operation));
+                                event_handled = true;
+                                break;
+                                
                             case TABLE_OP_SMOOTH_CELLS:
+                                add_log_entry(0, "*** SMOOTHING TRIGGERED *** - Key pressed, calling smooth_selection()");
+                                smooth_selection();
+                                event_handled = true;
+                                break;
+                                
                             case TABLE_OP_FILL_UP_RIGHT:
-                                add_log_entry(0, "Advanced operation '%s' triggered - implementation pending", 
+                                add_log_entry(0, "Fill operation '%s' triggered - implementation pending", 
                                             imgui_key_bindings_get_operation_name(operation));
                                 event_handled = true;
                                 break;
@@ -1264,13 +1381,28 @@ void handle_events() {
                         }
                     }
                     
-                    // Check for modifier keys for multi-cell selection
+                    // Check for modifier keys for multi-cell selection - try both methods
                     const Uint8* key_state = SDL_GetKeyboardState(NULL);
                     bool ctrl_pressed = key_state[SDL_SCANCODE_LCTRL] || key_state[SDL_SCANCODE_RCTRL];
                     bool shift_pressed = key_state[SDL_SCANCODE_LSHIFT] || key_state[SDL_SCANCODE_RSHIFT];
                     
-                    add_log_entry(0, "*** MOUSE CLICK FOR TABLE *** - Position: (%d, %d), Ctrl: %s, Shift: %s", 
-                                mouse_x, mouse_y, ctrl_pressed ? "true" : "false", shift_pressed ? "true" : "false");
+                    // Also check SDL event modifiers
+                    bool ctrl_from_event = (event.button.state & KMOD_CTRL) != 0;
+                    bool shift_from_event = (event.button.state & KMOD_SHIFT) != 0;
+                    
+                    // Use the event modifiers if keyboard state fails
+                    if (!ctrl_pressed && ctrl_from_event) ctrl_pressed = true;
+                    if (!shift_pressed && shift_from_event) shift_pressed = true;
+                    
+                    // Add detailed modifier key debugging
+                    add_log_entry(0, "*** MODIFIER KEY DEBUG *** - LCTRL: %d, RCTRL: %d, LSHIFT: %d, RSHIFT: %d", 
+                                key_state[SDL_SCANCODE_LCTRL], key_state[SDL_SCANCODE_RCTRL], 
+                                key_state[SDL_SCANCODE_LSHIFT], key_state[SDL_SCANCODE_RSHIFT]);
+                    add_log_entry(0, "*** EVENT MODIFIER DEBUG *** - Event Ctrl: %s, Event Shift: %s", 
+                                ctrl_from_event ? "true" : "false", shift_from_event ? "true" : "false");
+                    
+                    add_log_entry(0, "*** MOUSE CLICK FOR TABLE *** - Position: (%d, %d), Ctrl: %s, Shift: %s, Table coords: [%d,%d]", 
+                                mouse_x, mouse_y, ctrl_pressed ? "true" : "false", shift_pressed ? "true" : "false", table_x, table_y);
                     
                     add_log_entry(0, "*** TABLE CLICK PROCESSING *** - About to process click");
                     
@@ -1283,9 +1415,9 @@ void handle_events() {
                         
                         if (ctrl_pressed || shift_pressed) {
                             // Start multi-cell selection
-                            add_log_entry(3, "Starting multi-cell selection");
-                            // Temporarily disable multi-cell selection to isolate crash
-                            add_log_entry(0, "*** MULTI-CELL SELECTION TEMPORARILY DISABLED ***");
+                            add_log_entry(0, "*** MULTI-CELL SELECTION TRIGGERED *** - Ctrl: %s, Shift: %s, Position: [%d,%d]", 
+                                        ctrl_pressed ? "true" : "false", shift_pressed ? "true" : "false", table_x, table_y);
+                            start_multi_selection(table_x, table_y);
                             event_handled = true;
                         } else {
                             // Single cell selection (existing behavior)
@@ -1301,8 +1433,7 @@ void handle_events() {
                             snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.1f", cell_value);
                             
                             // Clear any existing multi-selection
-                            // Temporarily disable to isolate crash
-                            add_log_entry(0, "*** CLEAR MULTI-SELECTION TEMPORARILY DISABLED ***");
+                            clear_multi_selection();
                             
                             // Set flag to focus on next frame instead of calling SetKeyboardFocusHere directly
                             g_buffer_updated = true;
@@ -1315,67 +1446,67 @@ void handle_events() {
                 }
                 break;
                 
-                               case SDL_MOUSEBUTTONUP:
-                       // Handle mouse release for multi-cell selection
-                       if (g_selected_tab == 8 && event.button.button == SDL_BUTTON_LEFT && g_multi_selection.dragging && g_ve_table && g_ve_table_initialized) {
-                           end_multi_selection();
-                           event_handled = true;
-                       }
-                       break;
-                       
-                   case SDL_MOUSEMOTION:
-                       // Handle mouse drag for multi-cell selection
-                       if (g_selected_tab == 8 && g_multi_selection.dragging && g_ve_table && g_ve_table_initialized) {
-                           // Convert SDL mouse coordinates to table coordinates
-                           int mouse_x = event.motion.x;
-                           int mouse_y = event.motion.y;
-                           
-                           // Calculate table area - use cached window position to avoid calling ImGui functions from event handler
-                           float table_start_x = 0, table_start_y = 0, table_width = 0, table_height = 0;
-                           if (g_table_window_valid) {
-                               table_start_x = g_table_window_pos.x + 40;  // Match rendering: 40px from left
-                               table_start_y = g_table_window_pos.y + 30;  // Match rendering: 30px from top
-                               table_width = g_table_window_size.x - 80;   // Match rendering: 40px margin on each side
-                               table_height = g_table_window_size.y - 60;  // Match rendering: 30px margin on top/bottom
-                           } else {
-                               // Fallback to approximate values if cache is not valid
-                               int window_width = ImGui::GetIO().DisplaySize.x;
-                               int window_height = ImGui::GetIO().DisplaySize.y;
-                               table_start_x = 120;
-                               table_start_y = 250;
-                               table_width = window_width - 240;
-                               table_height = window_height - 450;
-                           }
-                           
-                           // Convert to table coordinates
-                           int table_x = -1, table_y = -1;
-                           if (mouse_x >= table_start_x && mouse_x <= table_start_x + table_width &&
-                               mouse_y >= table_start_y && mouse_y <= table_start_y + table_height) {
-                               // Convert to table coordinates (no additional margin adjustment needed)
-                               float adjusted_mouse_x = mouse_x - table_start_x;
-                               float adjusted_mouse_y = mouse_y - table_start_y;
-                               
-                               // Calculate cell dimensions - match rendering exactly
-                               float cell_width = table_width / g_ve_table->width;
-                               float cell_height = table_height / g_ve_table->height;
-                               
-                               table_x = (int)(adjusted_mouse_x / cell_width);
-                               table_y = (int)(adjusted_mouse_y / cell_height);
-                               
-                               // Clamp to valid range
-                               table_x = fmax(0, fmin(g_ve_table->width - 1, table_x));
-                               table_y = fmax(0, fmin(g_ve_table->height - 1, table_y));
-                               
-                                                           // Update multi-cell selection only if coordinates are valid
-                            if (table_x >= 0 && table_y >= 0 && table_x < g_ve_table->width && table_y < g_ve_table->height) {
-                                update_multi_selection(table_x, table_y);
-                                add_log_entry(3, "Mouse drag detected at (%d, %d) -> table [%d, %d]", 
-                                            mouse_x, mouse_y, table_x, table_y);
-                            } else {
-                                add_log_entry(3, "Mouse drag outside table area at (%d, %d)", mouse_x, mouse_y);
-                            }
-                           }
-                           event_handled = true;
+            case SDL_MOUSEBUTTONUP:
+                // Handle mouse release for multi-cell selection
+                if (g_selected_tab == 8 && event.button.button == SDL_BUTTON_LEFT && g_multi_selection.dragging && g_ve_table && g_ve_table_initialized) {
+                    end_multi_selection();
+                    event_handled = true;
+                }
+                break;
+                
+            case SDL_MOUSEMOTION:
+                // Handle mouse drag for multi-cell selection
+                if (g_selected_tab == 8 && g_multi_selection.dragging && g_ve_table && g_ve_table_initialized) {
+                    // Convert SDL mouse coordinates to table coordinates
+                    int mouse_x = event.motion.x;
+                    int mouse_y = event.motion.y;
+                    
+                    // Calculate table area - use cached window position to avoid calling ImGui functions from event handler
+                    float table_start_x = 0, table_start_y = 0, table_width = 0, table_height = 0;
+                    if (g_table_window_valid) {
+                        table_start_x = g_table_window_pos.x + 40;  // Match rendering: 40px from left
+                        table_start_y = g_table_window_pos.y + 30;  // Match rendering: 30px from top
+                        table_width = g_table_window_size.x - 80;   // Match rendering: 40px margin on each side
+                        table_height = g_table_window_size.y - 60;  // Match rendering: 30px margin on top/bottom
+                    } else {
+                        // Fallback to approximate values if cache is not valid
+                        int window_width = ImGui::GetIO().DisplaySize.x;
+                        int window_height = ImGui::GetIO().DisplaySize.y;
+                        table_start_x = 120;
+                        table_start_y = 250;
+                        table_width = window_width - 240;
+                        table_height = window_height - 450;
+                    }
+                    
+                    // Convert to table coordinates
+                    int table_x = -1, table_y = -1;
+                    if (mouse_x >= table_start_x && mouse_x <= table_start_x + table_width &&
+                        mouse_y >= table_start_y && mouse_y <= table_start_y + table_height) {
+                        // Convert to table coordinates (no additional margin adjustment needed)
+                        float adjusted_mouse_x = mouse_x - table_start_x;
+                        float adjusted_mouse_y = mouse_y - table_start_y;
+                        
+                        // Calculate cell dimensions - match rendering exactly
+                        float cell_width = table_width / g_ve_table->width;
+                        float cell_height = table_height / g_ve_table->height;
+                        
+                        table_x = (int)(adjusted_mouse_x / cell_width);
+                        table_y = (int)(adjusted_mouse_y / cell_height);
+                        
+                        // Clamp to valid range
+                        table_x = fmax(0, fmin(g_ve_table->width - 1, table_x));
+                        table_y = fmax(0, fmin(g_ve_table->height - 1, table_y));
+                        
+                        // Update multi-cell selection only if coordinates are valid
+                        if (table_x >= 0 && table_y >= 0 && table_x < g_ve_table->width && table_y < g_ve_table->height) {
+                            update_multi_selection(table_x, table_y);
+                            add_log_entry(3, "Mouse drag detected at (%d, %d) -> table [%d, %d]", 
+                                        mouse_x, mouse_y, table_x, table_y);
+                        } else {
+                            add_log_entry(3, "Mouse drag outside table area at (%d, %d)", mouse_x, mouse_y);
+                        }
+                    }
+                    event_handled = true;
                        }
                        break;
         }
@@ -2814,12 +2945,60 @@ void paste_from_clipboard() {
 }
 
 void interpolate_between_cells() {
-    add_log_entry(0, "*** interpolate_between_cells() called *** - g_ve_table: %p, g_interpolation_mode: %s", 
-                 g_ve_table, g_interpolation_mode ? "true" : "false");
+    add_log_entry(0, "*** interpolate_between_cells() called *** - g_ve_table: %p, g_interpolation_mode: %s, Multi-selection active: %s", 
+                 g_ve_table, g_interpolation_mode ? "true" : "false", g_multi_selection.active ? "true" : "false");
     if (!g_ve_table) return;
     
-    if (g_interpolation_mode) {
-        // Second cell selected - perform interpolation
+    // Check if multi-cell selection is active - prioritize this over two-point interpolation
+    if (g_multi_selection.active) {
+        add_log_entry(0, "*** MULTI-CELL INTERPOLATION MODE *** - Processing selection [%d,%d] to [%d,%d]", 
+                     g_multi_selection.start_x, g_multi_selection.start_y, 
+                     g_multi_selection.end_x, g_multi_selection.end_y);
+        
+        // Get selection bounds
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        // Get corner values for interpolation
+        float top_left = SafeTableAccess::get_value_safe(min_x, min_y, 75.0f);
+        float top_right = SafeTableAccess::get_value_safe(max_x, min_y, 75.0f);
+        float bottom_left = SafeTableAccess::get_value_safe(min_x, max_y, 75.0f);
+        float bottom_right = SafeTableAccess::get_value_safe(max_x, max_y, 75.0f);
+        
+        add_log_entry(0, "*** CORNER VALUES *** - TL: %.1f, TR: %.1f, BL: %.1f, BR: %.1f", 
+                     top_left, top_right, bottom_left, bottom_right);
+        
+        // Interpolate all cells in the selection
+        int cells_processed = 0;
+        for (int y = min_y; y <= max_y; y++) {
+            for (int x = min_x; x <= max_x; x++) {
+                if (is_cell_in_selection(x, y)) {
+                    // Calculate interpolation factors
+                    float u = (float)(x - min_x) / (max_x - min_x);
+                    float v = (float)(y - min_y) / (max_y - min_y);
+                    
+                    // Bilinear interpolation
+                    float interpolated_val = 
+                        top_left * (1 - u) * (1 - v) +
+                        top_right * u * (1 - v) +
+                        bottom_left * (1 - u) * v +
+                        bottom_right * u * v;
+                    
+                    // Apply the interpolated value
+                    if (SafeTableAccess::set_value_safe(x, y, interpolated_val)) {
+                        cells_processed++;
+                    }
+                }
+            }
+        }
+        
+        add_log_entry(0, "*** MULTI-CELL INTERPOLATION COMPLETE *** - Processed %d cells in selection", cells_processed);
+        
+        // Clear the selection after interpolation
+        clear_multi_selection();
+        
+    } else if (g_interpolation_mode) {
+        // Two-point interpolation mode (existing functionality)
         g_interpolation_end_x = g_selected_cell_x;
         g_interpolation_end_y = g_selected_cell_y;
         
@@ -2830,8 +3009,8 @@ void interpolate_between_cells() {
         int end_y = g_interpolation_end_y;
         
         // Get start and end values
-        float start_val = imgui_table_get_value(g_ve_table, start_x, start_y);
-        float end_val = imgui_table_get_value(g_ve_table, end_x, end_y);
+        float start_val = SafeTableAccess::get_value_safe(start_x, start_y, 75.0f);
+        float end_val = SafeTableAccess::get_value_safe(end_x, end_y, 75.0f);
         
         // Calculate number of steps
         int dx = abs(end_x - start_x);
@@ -2848,7 +3027,7 @@ void interpolate_between_cells() {
                 // Ensure coordinates are within bounds
                 if (x >= 0 && x < g_ve_table->width && y >= 0 && y < g_ve_table->height) {
                     float interpolated_val = start_val + (end_val - start_val) * t;
-                    imgui_table_set_value(g_ve_table, x, y, interpolated_val);
+                    SafeTableAccess::set_value_safe(x, y, interpolated_val);
                 }
             }
             
@@ -2885,6 +3064,9 @@ void clear_multi_selection() {
 }
 
 void start_multi_selection(int x, int y) {
+    add_log_entry(0, "*** start_multi_selection CALLED *** - Coordinates: [%d, %d], Table valid: %s", 
+                 x, y, g_ve_table ? "true" : "false");
+    
     if (!g_ve_table || x < 0 || x >= g_ve_table->width || y < 0 || y >= g_ve_table->height) {
         add_log_entry(2, "Invalid coordinates for multi-cell selection: [%d, %d]", x, y);
         return;
@@ -2896,10 +3078,12 @@ void start_multi_selection(int x, int y) {
     g_multi_selection.end_y = y;
     g_multi_selection.active = true;
     g_multi_selection.dragging = true;
-    g_multi_selection.drag_start_pos = ImGui::GetMousePos();
+    // Don't call ImGui functions from event handler - use SDL coordinates instead
+    g_multi_selection.drag_start_pos = ImVec2(0, 0); // Will be updated by SDL events
     g_multi_selection.drag_current_pos = g_multi_selection.drag_start_pos;
     
-    add_log_entry(0, "Multi-cell selection started at [%d, %d]", x, y);
+    add_log_entry(0, "*** Multi-cell selection STARTED *** - Start: [%d,%d], End: [%d,%d], Active: %s, Dragging: %s", 
+                 x, y, x, y, g_multi_selection.active ? "true" : "false", g_multi_selection.dragging ? "true" : "false");
 }
 
 void update_multi_selection(int x, int y) {
@@ -2914,7 +3098,8 @@ void update_multi_selection(int x, int y) {
     
     g_multi_selection.end_x = x;
     g_multi_selection.end_y = y;
-    g_multi_selection.drag_current_pos = ImGui::GetMousePos();
+    // Don't call ImGui functions from event handler - use SDL coordinates instead
+    g_multi_selection.drag_current_pos = ImVec2(0, 0); // Will be updated by SDL events
 }
 
 void end_multi_selection() {
@@ -2948,8 +3133,17 @@ bool is_cell_in_selection(int x, int y) {
         return false;
     }
     
-    return (x >= g_multi_selection.start_x && x <= g_multi_selection.end_x &&
-            y >= g_multi_selection.start_y && y <= g_multi_selection.end_y);
+    bool in_selection = (x >= g_multi_selection.start_x && x <= g_multi_selection.end_x &&
+                        y >= g_multi_selection.start_y && y <= g_multi_selection.end_y);
+    
+    // Add debug logging for selection detection
+    if (in_selection) {
+        add_log_entry(3, "*** CELL IN SELECTION *** - Cell [%d,%d] is in selection [%d,%d] to [%d,%d]", 
+                     x, y, g_multi_selection.start_x, g_multi_selection.start_y, 
+                     g_multi_selection.end_x, g_multi_selection.end_y);
+    }
+    
+    return in_selection;
 }
 
 void get_selection_bounds(int* min_x, int* min_y, int* max_x, int* max_y) {
@@ -3018,6 +3212,72 @@ void apply_operation_to_selection(TableOperation operation, float value) {
     add_log_entry(0, "Applied operation to %d cells in selection", cell_count);
 }
 
+void smooth_selection() {
+    if (!g_ve_table || !g_multi_selection.active) return;
+    
+    add_log_entry(0, "*** SMOOTHING SELECTION *** - Processing selection [%d,%d] to [%d,%d]", 
+                 g_multi_selection.start_x, g_multi_selection.start_y, 
+                 g_multi_selection.end_x, g_multi_selection.end_y);
+    
+    int min_x, min_y, max_x, max_y;
+    get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+    
+    // Create a temporary buffer for the smoothed values
+    float** temp_buffer = (float**)malloc((max_y - min_y + 1) * sizeof(float*));
+    for (int y = 0; y <= max_y - min_y; y++) {
+        temp_buffer[y] = (float*)malloc((max_x - min_x + 1) * sizeof(float));
+    }
+    
+    // Copy current values to temp buffer
+    for (int y = min_y; y <= max_y; y++) {
+        for (int x = min_x; x <= max_x; x++) {
+            if (is_cell_in_selection(x, y)) {
+                temp_buffer[y - min_y][x - min_x] = SafeTableAccess::get_value_safe(x, y, 75.0f);
+            }
+        }
+    }
+    
+    // Apply smoothing (3x3 Gaussian-like kernel)
+    int cells_processed = 0;
+    for (int y = min_y; y <= max_y; y++) {
+        for (int x = min_x; x <= max_x; x++) {
+            if (is_cell_in_selection(x, y)) {
+                float sum = 0.0f;
+                int count = 0;
+                
+                // 3x3 smoothing kernel
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        int nx = x + dx;
+                        int ny = y + dy;
+                        
+                        if (nx >= min_x && nx <= max_x && ny >= min_y && ny <= max_y && 
+                            is_cell_in_selection(nx, ny)) {
+                            sum += temp_buffer[ny - min_y][nx - min_x];
+                            count++;
+                        }
+                    }
+                }
+                
+                if (count > 0) {
+                    float smoothed_val = sum / count;
+                    if (SafeTableAccess::set_value_safe(x, y, smoothed_val)) {
+                        cells_processed++;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Clean up temp buffer
+    for (int y = 0; y <= max_y - min_y; y++) {
+        free(temp_buffer[y]);
+    }
+    free(temp_buffer);
+    
+    add_log_entry(0, "*** SMOOTHING COMPLETE *** - Processed %d cells in selection", cells_processed);
+}
+
 // Function to handle ECU connection with feedback
 void handle_ecu_connection(ECUContext* ecu_ctx, const ECUConfig* config) {
     if (!ecu_ctx || !config) return;
@@ -3064,12 +3324,19 @@ void render_ve_table_2d_view() {
         g_cell_editing = false;
         clear_multi_selection();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Force Reload Demo", ImVec2(120, 20))) {
+        if (g_ve_table) {
+            imgui_table_load_demo_data(g_ve_table);
+            add_log_entry(0, "*** FORCE RELOADED DEMO DATA *** - Table reset to clean demo values");
+        }
+    }
     
     // Show selected cell info
     if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        float cell_value = SafeTableAccess::get_value_safe(g_selected_cell_x, g_selected_cell_y, 75.0f);
         ImGui::Text("Selected: Cell [%d, %d] = %.1f VE", 
-                   g_selected_cell_x, g_selected_cell_y, 
-                   imgui_table_get_value(g_ve_table, g_selected_cell_x, g_selected_cell_y));
+                   g_selected_cell_x, g_selected_cell_y, cell_value);
         ImGui::Text("RPM: %.0f, MAP: %.1f kPa", 
                    g_ve_table->x_axis[g_selected_cell_x], 
                    g_ve_table->y_axis[g_selected_cell_y]);
@@ -3082,6 +3349,7 @@ void render_ve_table_2d_view() {
                    g_multi_selection.start_x, g_multi_selection.start_y,
                    g_multi_selection.end_x, g_multi_selection.end_y, cell_count);
         ImGui::Text("Use Ctrl+Click and drag to select multiple cells");
+        ImGui::Text("Press 'I' for interpolation, 'S' for smoothing");
     }
     
     ImGui::Separator();

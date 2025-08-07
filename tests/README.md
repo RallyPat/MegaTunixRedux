@@ -1,66 +1,88 @@
-# MegaTunix Redux - Test Suite
+# MegaTunix Redux Tests
 
-This directory contains all test files and scripts for MegaTunix Redux.
+This directory contains all test files and utilities for MegaTunix Redux.
 
 ## Directory Structure
 
-### `hardware/`
-Hardware-specific tests that require actual ECU hardware:
-- `test_speeduino_hardware.sh` - Tests with physical Speeduino ECU
-- `test_real_speeduino.sh` - Real hardware communication tests
-- `run_speeduino_test.sh` - Speeduino hardware test runner
+### `/speeduino/` - Speeduino Communication Tests
+Contains all Speeduino protocol communication tests and utilities:
 
-### `integration/`
-Integration tests for ECU communication and protocols:
-- `test_ecu_communication.sh` - ECU communication protocol tests
-- `test_realtime_streaming.sh` - Real-time data streaming tests
-- `test_speeduino_direct.c` - Direct Speeduino communication test program
-- `test_speeduino_enhanced.c` - Enhanced Speeduino protocol tests
-- `test_speeduino_direct` - Compiled test binary
+- **Protocol Tests**: `speeduino_*_test.c` - Various Speeduino protocol implementations
+- **CRC Tests**: `speeduino_crc_test.c` - CRC calculation and validation tests
+- **Communication Tests**: `speeduino_listen.c`, `speeduino_debug.c` - Communication debugging tools
+- **Protocol Variants**: `speeduino_*_protocol.c` - Different protocol implementations
 
-### `main/`
-Main application unit tests (future use)
+### `/communication/` - General Communication Tests
+Contains general communication and protocol tests:
 
-### `renderer/`
-Renderer and UI component tests (future use)
+- **TunerStudio Capture**: `capture_tunerstudio.c` - TunerStudio protocol analysis
 
-### `e2e/`
-End-to-end application tests (future use)
+### `/misc/` - Miscellaneous Tests
+Contains various utility tests and debugging tools:
+
+- **Simple Tests**: `simple_test.c` - Basic functionality tests
+- **Clay Tests**: `test_clay*.c` - Clay-specific test implementations
+
+### `/hardware/` - Hardware Integration Tests
+Contains hardware-specific test scripts and utilities:
+
+- **Speeduino Hardware**: `test_speeduino_hardware.sh` - Hardware integration tests
+- **Real Speeduino**: `test_real_speeduino.sh` - Tests with actual Speeduino hardware
 
 ## Running Tests
 
-### Hardware Tests (Require Physical ECU)
+### Speeduino Tests
 ```bash
-# Run all hardware tests
-cd tests/hardware
-./run_speeduino_test.sh
-
-# Individual hardware tests
-./test_speeduino_hardware.sh
-./test_real_speeduino.sh
+cd tests/speeduino/
+# Compile and run specific tests
+gcc -o speeduino_test speeduino_test.c
+./speeduino_test
 ```
+
+### Hardware Tests
+```bash
+cd tests/hardware/
+# Run hardware integration tests
+./test_speeduino_hardware.sh
+```
+
+### Communication Tests
+```bash
+cd tests/communication/
+# Run communication protocol tests
+gcc -o capture_tunerstudio capture_tunerstudio.c
+./capture_tunerstudio
+```
+
+## Test Categories
+
+### Unit Tests
+- Individual component testing
+- Protocol validation
+- CRC calculation tests
 
 ### Integration Tests
-```bash
-# ECU communication tests
-cd tests/integration
-./test_ecu_communication.sh
-./test_realtime_streaming.sh
+- Hardware communication
+- Protocol compatibility
+- End-to-end communication
 
-# Direct protocol tests
-./test_speeduino_direct
+### Debugging Tools
+- Protocol analyzers
+- Communication monitors
+- Error detection utilities
+
+## Building Tests
+
+Most test files can be compiled individually:
+```bash
+gcc -o test_name test_name.c -lserialport
 ```
 
-## Test Requirements
+For tests requiring additional libraries, see individual test files for specific requirements.
 
-- **Hardware Tests**: Require physical Speeduino ECU connected via USB/serial
-- **Integration Tests**: Can run with or without hardware (some have simulation modes)
-- **Unit Tests**: No hardware required (future implementation)
+## Notes
 
-## Adding New Tests
-
-When adding new test files:
-1. Place them in the appropriate subdirectory based on test type
-2. Use descriptive filenames with `test_` prefix
-3. Make shell scripts executable (`chmod +x`)
-4. Update this README with new test descriptions
+- Test executables are moved here from the root directory during cleanup
+- Original test functionality is preserved
+- Tests can be run independently or as part of CI/CD pipeline
+- Hardware tests require actual Speeduino hardware
