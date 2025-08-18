@@ -94,6 +94,14 @@ include_directories(
 # Source files for SDL2/ImGui version
 set(SOURCES
     src/main.cpp
+    src/data/datalog_manager.c
+    src/automation/macro_engine.c
+    src/automation/action_triggers.c
+    src/integrations/gps_provider.c
+    src/ui/undo_redo.c
+    src/ui/keybindings_prefs.c
+    src/io/export_import.c
+    src/diagnostics/diagnostics.c
     src/ecu/ecu_communication.c
     src/ecu/ecu_ini_parser.c
     src/ecu/ecu_dynamic_protocols.c
@@ -116,6 +124,13 @@ set(SOURCES
 # Header files
 set(HEADERS
     include/megatunix_redux.h
+    include/data/datalog_manager.h
+    include/automation/macro_engine.h
+    include/automation/action_triggers.h
+    include/integrations/gps_provider.h
+    include/ui/undo_redo.h
+    include/ui/keybindings_prefs.h
+    include/io/export_import.h
     include/ecu/ecu_communication.h
     include/dashboard/dashboard.h
     include/utils/config.h
