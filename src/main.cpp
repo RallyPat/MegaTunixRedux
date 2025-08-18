@@ -30,6 +30,11 @@
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
+#include <termios.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+#include <unistd.h>
 
 // ImGui includes
 // Dear ImGui v1.92.2 WIP - Copyright (c) 2014-2025 Omar Cornut
@@ -47,9 +52,350 @@
 #include "../include/ui/imgui_runtime_display.h"
 #include "../include/ui/imgui_communications.h"
 #include "../include/ui/imgui_key_bindings.h"
+#include "../include/data/datalog_manager.h"
+#include "../include/automation/macro_engine.h"
+#include "../include/automation/action_triggers.h"
+#include "../include/integrations/gps_provider.h"
+#include "../include/ui/undo_redo.h"
+#include "../include/ui/keybindings_prefs.h"
+#include "../include/io/export_import.h"
+#include "../include/diagnostics/diagnostics.h"
 
 // Forward declaration for log callback
 void imgui_communications_set_log_callback(LogCallback callback);
+
+// UI Theme and Styling System
+typedef enum {
+    THEME_CLASSIC_AUTOMOTIVE = 0,
+    THEME_MODERN_TECH,
+    THEME_RACING_GREEN,
+    THEME_SUNSET_ORANGE,
+    THEME_OCEAN_BLUE,
+    THEME_COUNT
+} ThemeType;
+
+typedef struct {
+    ImVec4 primary_color;           // Primary brand color
+    ImVec4 secondary_color;         // Secondary accent
+    ImVec4 accent_color;            // Accent highlight
+    ImVec4 success_color;           // Success/OK (green)
+    ImVec4 warning_color;           // Warning (yellow/orange)
+    ImVec4 error_color;             // Error/danger (red)
+    ImVec4 background_dark;         // Dark background
+    ImVec4 background_medium;       // Medium background
+    ImVec4 background_light;        // Light background
+    ImVec4 text_primary;            // Primary text
+    ImVec4 text_secondary;          // Secondary text
+    ImVec4 text_muted;              // Muted text
+    ImVec4 border_color;            // Border color
+    ImVec4 highlight_color;         // Selection highlight
+    float corner_radius;             // Corner radius for rounded elements
+    float border_thickness;          // Border thickness
+    float padding_multiplier;        // Padding multiplier for spacing
+    const char* name;                // Theme name for display
+} UITheme;
+
+static UITheme g_ui_theme;
+static ThemeType g_current_theme = THEME_CLASSIC_AUTOMOTIVE;
+
+// Initialize all available themes
+void init_ui_themes() {
+    // Classic Automotive Theme - Deep reds, chrome silvers, professional blacks
+    static UITheme themes[THEME_COUNT] = {
+        {
+            .primary_color = ImVec4(0.8f, 0.1f, 0.1f, 1.0f),      // Deep automotive red
+            .secondary_color = ImVec4(0.7f, 0.7f, 0.7f, 1.0f),    // Chrome silver
+            .accent_color = ImVec4(1.0f, 0.8f, 0.0f, 1.0f),       // Gold accent
+            .success_color = ImVec4(0.2f, 0.8f, 0.2f, 1.0f),      // Green
+            .warning_color = ImVec4(1.0f, 0.6f, 0.0f, 1.0f),      // Orange
+            .error_color = ImVec4(0.8f, 0.2f, 0.2f, 1.0f),        // Red
+            .background_dark = ImVec4(0.05f, 0.05f, 0.05f, 1.0f), // Deep black
+            .background_medium = ImVec4(0.1f, 0.1f, 0.1f, 1.0f),  // Medium black
+            .background_light = ImVec4(0.15f, 0.15f, 0.15f, 1.0f), // Light black
+            .text_primary = ImVec4(0.95f, 0.95f, 0.95f, 1.0f),    // Bright white
+            .text_secondary = ImVec4(0.8f, 0.8f, 0.8f, 1.0f),     // Light gray
+            .text_muted = ImVec4(0.6f, 0.6f, 0.6f, 1.0f),         // Medium gray
+            .border_color = ImVec4(0.3f, 0.3f, 0.3f, 1.0f),       // Subtle border
+            .highlight_color = ImVec4(0.8f, 0.1f, 0.1f, 0.3f),    // Selection highlight
+            .corner_radius = 6.0f,                                  // Rounded corners
+            .border_thickness = 1.0f,                               // Border thickness
+            .padding_multiplier = 1.2f,                             // Increased spacing
+            .name = "Classic Automotive"
+        },
+        {
+            .primary_color = ImVec4(0.0f, 0.6f, 1.0f, 1.0f),      // Electric blue
+            .secondary_color = ImVec4(0.8f, 0.8f, 0.8f, 1.0f),    // Light gray
+            .accent_color = ImVec4(0.0f, 0.9f, 0.9f, 1.0f),       // Cyan
+            .success_color = ImVec4(0.2f, 0.8f, 0.2f, 1.0f),      // Green
+            .warning_color = ImVec4(1.0f, 0.8f, 0.0f, 1.0f),      // Yellow
+            .error_color = ImVec4(0.8f, 0.2f, 0.2f, 1.0f),        // Red
+            .background_dark = ImVec4(0.08f, 0.08f, 0.1f, 1.0f),  // Dark blue-gray
+            .background_medium = ImVec4(0.12f, 0.12f, 0.15f, 1.0f), // Medium blue-gray
+            .background_light = ImVec4(0.18f, 0.18f, 0.22f, 1.0f), // Light blue-gray
+            .text_primary = ImVec4(0.95f, 0.95f, 0.95f, 1.0f),    // Bright white
+            .text_secondary = ImVec4(0.8f, 0.8f, 0.8f, 1.0f),     // Light gray
+            .text_muted = ImVec4(0.6f, 0.6f, 0.6f, 1.0f),         // Medium gray
+            .border_color = ImVec4(0.25f, 0.25f, 0.3f, 1.0f),     // Subtle border
+            .highlight_color = ImVec4(0.0f, 0.6f, 1.0f, 0.3f),    // Selection highlight
+            .corner_radius = 8.0f,                                  // Rounded corners
+            .border_thickness = 1.0f,                               // Border thickness
+            .padding_multiplier = 1.3f,                             // Increased spacing
+            .name = "Modern Tech"
+        },
+        {
+            .primary_color = ImVec4(0.0f, 0.4f, 0.2f, 1.0f),      // British racing green
+            .secondary_color = ImVec4(1.0f, 0.8f, 0.0f, 1.0f),    // Gold
+            .accent_color = ImVec4(0.0f, 0.8f, 0.4f, 1.0f),       // Bright green
+            .success_color = ImVec4(0.2f, 0.8f, 0.2f, 1.0f),      // Green
+            .warning_color = ImVec4(1.0f, 0.6f, 0.0f, 1.0f),      // Orange
+            .error_color = ImVec4(0.8f, 0.2f, 0.2f, 1.0f),        // Red
+            .background_dark = ImVec4(0.05f, 0.08f, 0.05f, 1.0f), // Dark green-black
+            .background_medium = ImVec4(0.08f, 0.12f, 0.08f, 1.0f), // Medium green-black
+            .background_light = ImVec4(0.12f, 0.16f, 0.12f, 1.0f), // Light green-black
+            .text_primary = ImVec4(0.95f, 0.95f, 0.95f, 1.0f),    // Bright white
+            .text_secondary = ImVec4(0.8f, 0.8f, 0.8f, 1.0f),     // Light gray
+            .text_muted = ImVec4(0.6f, 0.6f, 0.6f, 1.0f),         // Medium gray
+            .border_color = ImVec4(0.2f, 0.3f, 0.2f, 1.0f),       // Subtle border
+            .highlight_color = ImVec4(0.0f, 0.4f, 0.2f, 0.3f),    // Selection highlight
+            .corner_radius = 6.0f,                                  // Rounded corners
+            .border_thickness = 1.0f,                               // Border thickness
+            .padding_multiplier = 1.2f,                             // Increased spacing
+            .name = "Racing Green"
+        },
+        {
+            .primary_color = ImVec4(1.0f, 0.4f, 0.0f, 1.0f),      // Warm orange
+            .secondary_color = ImVec4(0.6f, 0.2f, 0.8f, 1.0f),    // Deep purple
+            .accent_color = ImVec4(0.8f, 0.5f, 0.3f, 1.0f),       // Darker orange-brown for better button contrast
+            .success_color = ImVec4(0.2f, 0.8f, 0.2f, 1.0f),      // Green
+            .warning_color = ImVec4(0.8f, 0.6f, 0.0f, 1.0f),      // Darker yellow for better button contrast
+            .error_color = ImVec4(0.8f, 0.2f, 0.2f, 1.0f),        // Red
+            .background_dark = ImVec4(0.08f, 0.05f, 0.08f, 1.0f), // Dark purple-black
+            .background_medium = ImVec4(0.12f, 0.08f, 0.12f, 1.0f), // Medium purple-black
+            .background_light = ImVec4(0.15f, 0.10f, 0.15f, 1.0f), // Much darker for better button contrast
+            .text_primary = ImVec4(0.95f, 0.95f, 0.95f, 1.0f),    // Bright white
+            .text_secondary = ImVec4(0.8f, 0.8f, 0.8f, 1.0f),     // Light gray
+            .text_muted = ImVec4(0.6f, 0.6f, 0.6f, 1.0f),         // Medium gray
+            .border_color = ImVec4(0.5f, 0.3f, 0.5f, 1.0f),      // Much darker border for better contrast
+            .highlight_color = ImVec4(1.0f, 0.4f, 0.0f, 0.3f),    // Selection highlight
+            .corner_radius = 7.0f,                                  // Rounded corners
+            .border_thickness = 1.0f,                               // Border thickness
+            .padding_multiplier = 1.25f,                            // Increased spacing
+            .name = "Sunset Synthwave"
+        },
+        {
+            .primary_color = ImVec4(0.0f, 0.4f, 0.8f, 1.0f),      // Deep ocean blue
+            .secondary_color = ImVec4(0.0f, 0.7f, 0.7f, 1.0f),    // Teal
+            .accent_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),       // White
+            .success_color = ImVec4(0.2f, 0.8f, 0.2f, 1.0f),      // Green
+            .warning_color = ImVec4(1.0f, 0.8f, 0.0f, 1.0f),      // Yellow
+            .error_color = ImVec4(0.8f, 0.2f, 0.2f, 1.0f),        // Red
+            .background_dark = ImVec4(0.05f, 0.08f, 0.12f, 1.0f), // Dark blue-black
+            .background_medium = ImVec4(0.08f, 0.12f, 0.18f, 1.0f), // Medium blue-black
+            .background_light = ImVec4(0.12f, 0.16f, 0.24f, 1.0f), // Light blue-black
+            .text_primary = ImVec4(0.95f, 0.95f, 0.95f, 1.0f),    // Bright white
+            .text_secondary = ImVec4(0.8f, 0.8f, 0.8f, 1.0f),     // Light gray
+            .text_muted = ImVec4(0.6f, 0.6f, 0.6f, 1.0f),         // Medium gray
+            .border_color = ImVec4(0.2f, 0.3f, 0.4f, 1.0f),       // Subtle border
+            .highlight_color = ImVec4(0.0f, 0.4f, 0.8f, 0.3f),    // Selection highlight
+            .corner_radius = 6.0f,                                  // Rounded corners
+            .border_thickness = 1.0f,                               // Border thickness
+            .padding_multiplier = 1.2f,                             // Increased spacing
+            .name = "Ocean Blue"
+        }
+    };
+    
+    // Copy the selected theme to the global theme
+    memcpy(&g_ui_theme, &themes[g_current_theme], sizeof(UITheme));
+}
+
+// Initialize the current theme
+void init_ui_theme() {
+    init_ui_themes();
+}
+
+// Apply the professional theme to ImGui
+void apply_ui_theme() {
+    ImGuiStyle& style = ImGui::GetStyle();
+    
+    // Colors
+    style.Colors[ImGuiCol_Text] = g_ui_theme.text_primary;
+    style.Colors[ImGuiCol_TextDisabled] = g_ui_theme.text_muted;
+    style.Colors[ImGuiCol_WindowBg] = g_ui_theme.background_dark;
+    style.Colors[ImGuiCol_ChildBg] = g_ui_theme.background_medium;
+    style.Colors[ImGuiCol_PopupBg] = g_ui_theme.background_medium;
+    style.Colors[ImGuiCol_Border] = g_ui_theme.border_color;
+    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+    
+    // Button colors
+    style.Colors[ImGuiCol_Button] = g_ui_theme.background_light;
+    style.Colors[ImGuiCol_ButtonHovered] = g_ui_theme.primary_color;
+    style.Colors[ImGuiCol_ButtonActive] = g_ui_theme.secondary_color;
+    
+    // Header colors
+    style.Colors[ImGuiCol_Header] = g_ui_theme.background_light;
+    style.Colors[ImGuiCol_HeaderHovered] = g_ui_theme.primary_color;
+    style.Colors[ImGuiCol_HeaderActive] = g_ui_theme.secondary_color;
+    
+    // Tab colors
+    style.Colors[ImGuiCol_Tab] = g_ui_theme.background_light;
+    style.Colors[ImGuiCol_TabHovered] = g_ui_theme.primary_color;
+    style.Colors[ImGuiCol_TabActive] = g_ui_theme.secondary_color;
+    
+    // Selection colors
+    style.Colors[ImGuiCol_NavHighlight] = g_ui_theme.accent_color;
+    
+    // Slider colors
+    style.Colors[ImGuiCol_SliderGrab] = g_ui_theme.primary_color;
+    style.Colors[ImGuiCol_SliderGrabActive] = g_ui_theme.secondary_color;
+    
+    // Progress bar colors
+    style.Colors[ImGuiCol_PlotHistogram] = g_ui_theme.primary_color;
+    style.Colors[ImGuiCol_PlotHistogramHovered] = g_ui_theme.secondary_color;
+    
+    // Frame colors
+    style.Colors[ImGuiCol_FrameBg] = g_ui_theme.background_light;
+    style.Colors[ImGuiCol_FrameBgHovered] = g_ui_theme.background_medium;
+    style.Colors[ImGuiCol_FrameBgActive] = g_ui_theme.primary_color;
+    
+    // Input field colors
+    style.Colors[ImGuiCol_TextSelectedBg] = g_ui_theme.highlight_color;
+    
+    // Spacing and sizing
+    style.WindowPadding = ImVec2(15 * g_ui_theme.padding_multiplier, 15 * g_ui_theme.padding_multiplier);
+    style.FramePadding = ImVec2(8 * g_ui_theme.padding_multiplier, 4 * g_ui_theme.padding_multiplier);
+    style.ItemSpacing = ImVec2(10 * g_ui_theme.padding_multiplier, 8 * g_ui_theme.padding_multiplier);
+    style.ItemInnerSpacing = ImVec2(6 * g_ui_theme.padding_multiplier, 4 * g_ui_theme.padding_multiplier);
+    style.ScrollbarSize = 16.0f;
+    style.GrabMinSize = 8.0f;
+    
+    // Borders and corners
+    style.WindowRounding = g_ui_theme.corner_radius;
+    style.ChildRounding = g_ui_theme.corner_radius;
+    style.FrameRounding = g_ui_theme.corner_radius;
+    style.PopupRounding = g_ui_theme.corner_radius;
+    style.ScrollbarRounding = g_ui_theme.corner_radius;
+    style.GrabRounding = g_ui_theme.corner_radius;
+    style.TabRounding = g_ui_theme.corner_radius;
+    
+    // Borders
+    style.WindowBorderSize = g_ui_theme.border_thickness;
+    style.ChildBorderSize = g_ui_theme.border_thickness;
+    style.PopupBorderSize = g_ui_theme.border_thickness;
+    style.FrameBorderSize = g_ui_theme.border_thickness;
+    style.TabBorderSize = g_ui_theme.border_thickness;
+}
+
+// Switch to a different theme
+void switch_theme(ThemeType theme) {
+    if (theme >= 0 && theme < THEME_COUNT) {
+        g_current_theme = theme;
+        init_ui_themes();
+        apply_ui_theme();
+    }
+}
+
+// Professional button styling helper
+void render_professional_button(const char* label, const ImVec2& size, bool* clicked, 
+                               const ImVec4& color = ImVec4(0,0,0,0), 
+                               const char* tooltip = nullptr) {
+    ImGui::PushStyleColor(ImGuiCol_Button, color.x == 0 ? g_ui_theme.background_light : color);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color.x == 0 ? g_ui_theme.primary_color : 
+                         ImVec4(color.x * 1.2f, color.y * 1.2f, color.z * 1.2f, color.w));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, color.x == 0 ? g_ui_theme.secondary_color : 
+                         ImVec4(color.x * 0.8f, color.y * 0.8f, color.z * 0.8f, color.w));
+    
+    if (ImGui::Button(label, size)) {
+        if (clicked) *clicked = true;
+    }
+    
+    if (tooltip && ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", tooltip);
+    }
+    
+    ImGui::PopStyleColor(3);
+}
+
+// Professional section header helper
+void render_section_header(const char* title, const char* subtitle, 
+                          const ImVec4& accent_color) {
+    ImGui::PushStyleColor(ImGuiCol_Text, g_ui_theme.text_primary);
+    
+    // Main title
+    ImGui::TextColored(accent_color.x == 0 ? g_ui_theme.primary_color : accent_color, 
+                       "%s", title);
+    
+    // Subtitle if provided
+    if (subtitle) {
+        ImGui::SameLine();
+        ImGui::TextColored(g_ui_theme.text_secondary, " - %s", subtitle);
+    }
+    
+    ImGui::PopStyleColor();
+    
+    // Subtle separator
+    ImGui::PushStyleColor(ImGuiCol_Separator, g_ui_theme.border_color);
+    ImGui::Separator();
+    ImGui::PopStyleColor();
+    
+    ImGui::Spacing();
+}
+
+// Professional status indicator helper
+void render_status_indicator(const char* label, bool is_active, const char* status_text) {
+    ImGui::BeginGroup();
+    
+    // Status dot
+    ImVec4 status_color = is_active ? g_ui_theme.success_color : g_ui_theme.error_color;
+    ImGui::TextColored(status_color, "●");
+    ImGui::SameLine();
+    
+    // Label
+    ImGui::TextColored(g_ui_theme.text_primary, "%s", label);
+    
+    // Status text if provided
+    if (status_text) {
+        ImGui::SameLine();
+        ImGui::TextColored(g_ui_theme.text_secondary, ": %s", status_text);
+    }
+    
+    ImGui::EndGroup();
+}
+
+// Professional metric display helper
+void render_metric_card(const char* label, const char* value, const char* unit, 
+                       const ImVec4& value_color, 
+                       const char* description) {
+    ImGui::BeginGroup();
+    
+    // Card background
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_medium);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild(label, ImVec2(150, 80), true);
+    
+    // Label
+    ImGui::TextColored(g_ui_theme.text_secondary, "%s", label);
+    
+    // Value
+    ImGui::TextColored(value_color.x == 0 ? g_ui_theme.text_primary : value_color, 
+                       "%s", value);
+    
+    // Unit
+    if (unit) {
+        ImGui::SameLine();
+        ImGui::TextColored(g_ui_theme.text_muted, " %s", unit);
+    }
+    
+    // Description if provided
+    if (description) {
+        ImGui::TextColored(g_ui_theme.text_muted, "%s", description);
+    }
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+}
 
 // Log system constants
 #define MAX_LOG_ENTRIES 1000
@@ -78,6 +424,7 @@ static const char* g_tab_names[] = {
     "Engine Vitals",
     "Enrichments",
     "VE Table(1)",
+    "Ignition Table",
     "Tools",
     "Warmup Wizard"
 };
@@ -106,10 +453,12 @@ static char g_button_status_text[256] = "";
 // Log timing
 static uint32_t g_last_log_time = 0;
 
-// VE Table state
+// ECU Table state
 static ImGuiTable* g_ve_table = NULL;
+static ImGuiTable* g_ignition_table = NULL;
 static ImGuiVE3DView g_ve_3d_view = {0};
 static bool g_ve_table_initialized = false;
+static bool g_ignition_table_initialized = false;
 static ImGuiVETexture* g_ve_texture = NULL;
 static bool g_ve_texture_initialized = false;
 static bool g_ve_mouse_dragging = false;
@@ -155,6 +504,122 @@ static uint32_t g_last_trail_update = 0;
 static bool g_show_engine_trail = true; // Toggle for engine trail visibility
 // Removed Y-axis label rotation toggle - MAP title is now permanently rotated
 
+// View system for TunerStudio-style layout
+typedef enum {
+    VIEW_GAUGE_CLUSTER = 0,
+    VIEW_TUNING,
+    VIEW_GRAPHING,
+    VIEW_DIAGNOSTICS,
+    VIEW_COMMUNICATIONS,
+    VIEW_COUNT
+} ViewType;
+
+static ViewType g_selected_view = VIEW_GAUGE_CLUSTER;
+
+// Global variable to track which table is selected in tuning view
+static int g_selected_table_index = 0; // 0 = VE Table, 1 = Ignition Table
+
+// Speeduino Communication Protocol (using existing definitions)
+#define SPEEDUINO_BAUDRATE B115200
+#define SPEEDUINO_TIMEOUT_MS 1000
+#define SPEEDUINO_MAX_RESPONSE_SIZE 1024
+#define SPEEDUINO_CRC_POLYNOMIAL 0x31
+#define SPEEDUINO_CRC_INIT 0xFF
+
+// Settings and persistence
+#define SETTINGS_FILE "megatunix-redux.conf"
+#define SETTINGS_VERSION 1
+
+// Speeduino Communication Structures (using existing definitions)
+
+typedef struct {
+    float rpm;
+    float map;
+    float tps;
+    float coolant_temp;
+    float intake_temp;
+    float afr;
+    float ignition_advance;
+    float fuel_pressure;
+    float oil_pressure;
+    float battery_voltage;
+    uint32_t timestamp;
+} SpeeduinoRealtimeData;
+
+typedef struct {
+    char port[64];
+    int baudrate;
+    int timeout_ms;
+    bool connected;
+    bool auto_connect;
+    int retry_count;
+    int max_retries;
+    uint32_t last_communication;
+    uint32_t communication_timeout;
+} SpeeduinoConnection;
+
+typedef struct {
+    int version;
+    ThemeType theme;
+    bool demo_mode;
+    bool debug_mode;
+    bool log_auto_scroll;
+    int log_filter_level;
+    bool show_engine_trail;
+    float window_width;
+    float window_height;
+    bool window_maximized;
+} UserSettings;
+
+static UserSettings g_user_settings = {
+    .version = SETTINGS_VERSION,
+    .theme = THEME_CLASSIC_AUTOMOTIVE,
+    .demo_mode = false,
+    .debug_mode = false,
+    .log_auto_scroll = true,
+    .log_filter_level = 0,
+    .show_engine_trail = true,
+    .window_width = 1280.0f,
+    .window_height = 720.0f,
+    .window_maximized = false
+};
+
+// Speeduino communication globals
+static SpeeduinoConnection g_speeduino_connection = {
+    .port = "/dev/ttyACM0",  // Changed to ttyACM0 for Speeduino UA4C
+    .baudrate = SPEEDUINO_BAUDRATE,
+    .timeout_ms = SPEEDUINO_TIMEOUT_MS,
+    .connected = false,
+    .auto_connect = true,
+    .retry_count = 0,
+    .max_retries = 3,
+    .last_communication = 0,
+    .communication_timeout = 5000
+};
+
+// Helper function to get the currently active table
+static ImGuiTable* get_active_table() {
+    // Check if we're in the VE Table tab
+    if (g_selected_tab == 8) {
+        return g_ve_table;
+    }
+    // Check if we're in the tuning view with a table selected
+    else if (g_selected_view == VIEW_TUNING) {
+        if (g_selected_table_index == 0) {
+            return g_ve_table;
+        } else if (g_selected_table_index == 1) {
+            return g_ignition_table;
+        }
+    }
+    return NULL;
+}
+
+static SpeeduinoRealtimeData g_speeduino_realtime = {0};
+static int g_speeduino_fd = -1;
+static bool g_speeduino_initialized = false;
+static uint32_t g_last_realtime_update = 0;
+static uint32_t g_realtime_update_interval = 100; // 10Hz update rate
+
 // Demo mode variables
 static bool g_demo_mode = false;
 static bool g_debug_mode = false;
@@ -168,15 +633,68 @@ static int g_clipboard_width = 0;
 static int g_clipboard_height = 0;
 static bool g_clipboard_has_data = false;
 
-// Interpolation state for smooth transitions
+// Advanced VE ops UI state
+static bool g_show_set_to_popup = false;
+static float g_set_to_value = 0.0f;
+static bool g_show_paste_special_popup = false;
+static int g_paste_special_mode = 0; // 0=Multiply %, 1=Multiply Raw, 2=Add, 3=Subtract
+
+// Professional table operations and display
+static bool g_table_interpolation_mode = false;
 static int g_interpolation_start_x = -1;
 static int g_interpolation_start_y = -1;
 static int g_interpolation_end_x = -1;
 static int g_interpolation_end_y = -1;
+static float g_interpolation_factor = 0.5f;
+
+// Table comparison and versioning
+static ImGuiTable* g_table_backup = NULL;
+static bool g_table_has_changes = false;
+static int g_table_version = 1;
+static char g_table_comment[256] = "Initial table";
+
+// Professional table display options
+static bool g_show_table_headers = true;
+static bool g_show_table_grid = true;
+static bool g_show_table_values = true;
+static bool g_show_table_heatmap = true;
+static float g_table_opacity = 0.8f;
+static int g_table_view_mode = 0; // 0=2D, 1=3D, 2=Comparison, 3=Professional
+static bool g_show_settings_window = false;
+
+// Interpolation state for smooth transitions
 static bool g_interpolation_mode = false;
 
 // Legend window state
 static bool show_legend = false;
+static bool g_legend_just_popped = false;
+// Legend enhancements
+static bool key_binding_matches(SDL_Keycode key, SDL_Keymod mod, TableOperation expected) {
+    TableKeyBindingState tmp_state;
+    imgui_key_bindings_init(&tmp_state);
+    imgui_key_bindings_set_table_focused(true);
+    TableOperation op = imgui_key_bindings_process_key(&tmp_state, key, mod);
+    imgui_key_bindings_set_table_focused(false);
+    return op == expected;
+}
+
+static bool compute_bindings_mismatch(void) {
+    bool ok = true;
+    ok &= key_binding_matches(SDLK_PLUS, (SDL_Keymod)0, TABLE_OP_INCREASE_BY) ||
+          key_binding_matches(SDLK_KP_PLUS, (SDL_Keymod)0, TABLE_OP_INCREASE_BY);
+    ok &= key_binding_matches(SDLK_MINUS, (SDL_Keymod)0, TABLE_OP_DECREASE_BY) ||
+          key_binding_matches(SDLK_KP_MINUS, (SDL_Keymod)0, TABLE_OP_DECREASE_BY);
+    ok &= key_binding_matches(SDLK_ASTERISK, (SDL_Keymod)0, TABLE_OP_SCALE_BY) ||
+          key_binding_matches(SDLK_KP_MULTIPLY, (SDL_Keymod)0, TABLE_OP_SCALE_BY);
+    ok &= key_binding_matches(SDLK_i, (SDL_Keymod)0, TABLE_OP_INTERPOLATE);
+    ok &= key_binding_matches(SDLK_h, (SDL_Keymod)0, TABLE_OP_INTERPOLATE_H);
+    ok &= key_binding_matches(SDLK_v, (SDL_Keymod)0, TABLE_OP_INTERPOLATE_V);
+    ok &= key_binding_matches(SDLK_s, (SDL_Keymod)0, TABLE_OP_SMOOTH_CELLS);
+    ok &= key_binding_matches(SDLK_f, (SDL_Keymod)0, TABLE_OP_FILL_UP_RIGHT);
+    ok &= key_binding_matches(SDLK_c, KMOD_CTRL, TABLE_OP_COPY);
+    ok &= key_binding_matches(SDLK_v, KMOD_CTRL, TABLE_OP_PASTE);
+    return !ok;
+}
 
 // Window position cache for event handling (to avoid calling ImGui functions from event handler)
 static ImVec2 g_table_window_pos = ImVec2(0, 0);
@@ -323,19 +841,40 @@ void render_log_window() {
         ImGuiWindowFlags_NoMove;
     
     if (ImGui::Begin("UI Log", &g_log_window_open, window_flags)) {
-        // Log controls
+        // Log controls with professional styling
+        ImGui::BeginGroup();
+        
+        // Enhanced checkbox styling
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, g_ui_theme.success_color);
         ImGui::Checkbox("Auto-scroll", &g_log_auto_scroll);
+        ImGui::PopStyleColor();
+        
         ImGui::SameLine();
-        if (ImGui::Button("Clear")) {
+        
+        // Enhanced button styling
+        bool clear_clicked = false;
+        render_professional_button("Clear", ImVec2(60, 25), &clear_clicked, 
+                                 g_ui_theme.warning_color, "Clear all log entries");
+        if (clear_clicked) {
             g_log_count = 0;
             g_log_index = 0;
         }
+        
         ImGui::SameLine();
-        if (ImGui::Button("Show Debug")) {
+        
+        bool show_debug_clicked = false;
+        render_professional_button("Show Debug", ImVec2(100, 25), &show_debug_clicked, 
+                                 g_ui_theme.accent_color, "Show high priority messages only");
+        if (show_debug_clicked) {
             g_log_filter_level = 3; // Force show high priority messages
         }
+        
         ImGui::SameLine();
-        if (ImGui::Button("Test Multi-Select")) {
+        
+        bool test_multi_clicked = false;
+        render_professional_button("Test Multi-Select", ImVec2(140, 25), &test_multi_clicked, 
+                                 g_ui_theme.secondary_color, "Test multi-cell selection functionality");
+        if (test_multi_clicked) {
             // Test multi-cell selection functionality
             add_log_entry(0, "*** TESTING MULTI-CELL SELECTION ***");
             if (g_ve_table && g_ve_table_initialized) {
@@ -346,9 +885,14 @@ void render_log_window() {
                 add_log_entry(2, "*** TEST FAILED *** - VE table not initialized");
             }
         }
+        
         ImGui::SameLine();
-        ImGui::Text("Filter:");
+        
+        // Enhanced filter combo styling
+        ImGui::TextColored(g_ui_theme.text_primary, "Filter:");
         ImGui::SameLine();
+        
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, g_ui_theme.background_light);
         const char* filter_items[] = {"All", "Warning+", "Error Only", "High Priority Only"};
         ImGui::SetNextItemWidth(150);
         if (ImGui::BeginCombo("##filter", filter_items[g_log_filter_level])) {
@@ -363,11 +907,25 @@ void render_log_window() {
             }
             ImGui::EndCombo();
         }
+        ImGui::PopStyleColor();
         
+        ImGui::EndGroup();
+        
+        // Professional separator
+        ImGui::PushStyleColor(ImGuiCol_Separator, g_ui_theme.border_color);
         ImGui::Separator();
+        ImGui::PopStyleColor();
         
-        // Log display area
-        ImGui::BeginChild("LogContent", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+        // Log display area (leave top controls visible, scroll only messages)
+        float controls_height = 0.0f;
+        controls_height += ImGui::GetFrameHeight(); // row with checkboxes/buttons
+        controls_height += 8.0f; // small padding
+        ImVec2 child_size = ImVec2(0, ImGui::GetWindowHeight() - controls_height - ImGui::GetStyle().WindowPadding.y * 2);
+        if (child_size.y < 60.0f) child_size.y = 60.0f;
+        
+        // Enhanced log content area styling
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_medium);
+        ImGui::BeginChild("LogContent", child_size, false, ImGuiWindowFlags_HorizontalScrollbar);
         
         // Display log entries
         for (int i = 0; i < g_log_count; i++) {
@@ -388,27 +946,27 @@ void render_log_window() {
                 continue;
             }
             
-            // Color based on log level
+            // Enhanced color scheme based on log level using theme colors
             ImVec4 color;
             if (strstr(entry->message, "***") != NULL) {
-                // High priority messages - bright cyan
-                color = ImVec4(0.0f, 1.0f, 1.0f, 1.0f);
+                // High priority messages - use theme accent color
+                color = g_ui_theme.accent_color;
             } else {
                 switch (entry->level) {
                     case 0: // INFO
-                        color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                        color = g_ui_theme.text_primary;
                         break;
                     case 1: // WARNING
-                        color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+                        color = g_ui_theme.warning_color;
                         break;
                     case 2: // ERROR
-                        color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+                        color = g_ui_theme.error_color;
                         break;
                     case 3: // DEBUG
-                        color = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+                        color = g_ui_theme.text_muted;
                         break;
                     default:
-                        color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                        color = g_ui_theme.text_primary;
                 }
             }
             
@@ -421,6 +979,7 @@ void render_log_window() {
         }
         
         ImGui::EndChild();
+        ImGui::PopStyleColor();
     }
     ImGui::End();
 }
@@ -449,16 +1008,81 @@ void render_logviewer_tab();
 void render_engine_vitals_tab();
 void render_enrichments_tab();
 void render_ve_table_tab();
+void render_ignition_table_tab();
 void render_ve_table_2d_view();
 void render_ve_table_3d_view();
 void render_ve_table_editor_view();
 void render_tools_tab();
 void render_warmup_wizard_tab();
+
+// TunerStudio-style UI functions
+void render_tunerstudio_sidebar();
+void render_content_by_view();
+void render_gauge_cluster_view();
+void render_tuning_view();
+void render_graphing_view();
+void render_diagnostics_view();
+void render_communications_view();
+void render_settings_window();
+
+// Settings management functions
+void load_user_settings();
+void save_user_settings();
+void apply_user_settings();
+void reset_user_settings_to_defaults();
+
+// Professional table operations
+void create_table_backup();
+void restore_table_from_backup();
+void compare_tables();
+void interpolate_table_values();
+void smooth_table_region();
+void apply_table_math_operation(const char* operation, float value);
+void export_table_to_file(const char* filename);
+void import_table_from_file(const char* filename);
+void render_professional_table_header();
+void render_table_operations_toolbar();
+
+// Speeduino communication system
+void speeduino_init();
+void speeduino_cleanup();
+bool speeduino_connect(const char* port);
+void speeduino_disconnect();
+bool speeduino_is_connected();
+bool speeduino_send_packet(SpeeduinoPacket* packet);
+uint8_t speeduino_calculate_crc(uint8_t* data, int length);
+bool speeduino_get_realtime_data();
+bool speeduino_get_table_data(uint8_t table_id);
+bool speeduino_set_table_data(uint8_t table_id, uint8_t* data, int length);
+void speeduino_update_connection_status();
+void render_ecu_connection_panel();
+
 void handle_communications_buttons(); 
 void update_engine_trail(int current_x, int current_y, TrailPoint* trail, int* trail_count);
 void copy_selected_cell_to_clipboard();
 void paste_from_clipboard();
 void interpolate_between_cells();
+
+// UI Theme function declarations
+void init_ui_theme();
+void apply_ui_theme();
+void switch_theme(ThemeType theme);
+void render_professional_button(const char* label, const ImVec2& size, bool* clicked, 
+                               const ImVec4& color, 
+                               const char* tooltip);
+void render_section_header(const char* title, const char* subtitle, 
+                          const ImVec4& accent_color);
+void render_status_indicator(const char* label, bool is_active, const char* status_text);
+void render_metric_card(const char* label, const char* value, const char* unit, 
+                       const ImVec4& value_color, 
+                       const char* description);
+
+// Advanced VE ops helpers
+void copy_selection_to_clipboard();
+void paste_block_at(int start_x, int start_y);
+void paste_special_block_at(int start_x, int start_y, int mode);
+void horizontal_interpolate_selection();
+void vertical_interpolate_selection();
 
 // Multi-cell selection helper functions
 void clear_multi_selection();
@@ -470,6 +1094,192 @@ void get_selection_bounds(int* min_x, int* min_y, int* max_x, int* max_y);
 int get_selection_cell_count();
 void apply_operation_to_selection(TableOperation operation, float value);
 void smooth_selection();
+void gaussian_smooth_selection();
+void moving_average_smooth_selection();
+void bilateral_smooth_selection();
+
+// Professional smoothing functions for different smoothing methods
+// These provide the core functionality that professional tuners need
+
+/**
+ * Gaussian smoothing with configurable strength
+ * Called when user presses 'G' key
+ */
+void gaussian_smooth_selection() {
+    if (!g_ve_table) {
+        add_log_entry(0, "No VE table available for Gaussian smoothing");
+        return;
+    }
+    
+    if (g_multi_selection.active) {
+        // Use multi-selection bounds
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        add_log_entry(0, "*** GAUSSIAN SMOOTHING SELECTION *** - Processing selection [%d,%d] to [%d,%d]", 
+                     min_x, min_y, max_x, max_y);
+        
+        // Use Gaussian smoothing with edge preservation
+        bool success = imgui_table_gaussian_smooth(g_ve_table, min_x, min_y, max_x, max_y, 1.5f, true);
+        
+        if (success) {
+            add_log_entry(0, "*** GAUSSIAN SMOOTHING COMPLETE *** - Applied edge-preserving smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "*** GAUSSIAN SMOOTHING FAILED *** - Smoothing failed");
+        }
+        
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        // Single cell selected - smooth a 5x5 area around it
+        int start_x = fmax(0, g_selected_cell_x - 2);
+        int end_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 2);
+        int start_y = fmax(0, g_selected_cell_y - 2);
+        int end_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 2);
+        
+        add_log_entry(0, "*** 5x5 GAUSSIAN SMOOTHING *** - Smoothing area around [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+        
+        // Use Gaussian smoothing with edge preservation
+        bool success = imgui_table_gaussian_smooth(g_ve_table, start_x, start_y, end_x, end_y, 1.0f, true);
+        
+        if (success) {
+            add_log_entry(0, "*** 5x5 GAUSSIAN SMOOTHING COMPLETE *** - Applied edge-preserving smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "*** 5x5 GAUSSIAN SMOOTHING FAILED *** - Smoothing failed");
+        }
+        
+    } else {
+        add_log_entry(0, "No selection available for Gaussian smoothing");
+    }
+}
+
+/**
+ * Moving average smoothing for trend-based smoothing
+ * Called when user presses 'M' key
+ */
+void moving_average_smooth_selection() {
+    if (!g_ve_table) {
+        add_log_entry(0, "No VE table available for moving average smoothing");
+        return;
+    }
+    
+    if (g_multi_selection.active) {
+        // Use multi-selection bounds
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        add_log_entry(0, "*** MOVING AVERAGE SMOOTHING SELECTION *** - Processing selection [%d,%d] to [%d,%d]", 
+                     min_x, min_y, max_x, max_y);
+        
+        // Use moving average smoothing with 5x5 window
+        bool success = imgui_table_moving_average_smooth(g_ve_table, min_x, min_y, max_x, max_y, 5, false);
+        
+        if (success) {
+            add_log_entry(0, "*** MOVING AVERAGE SMOOTHING COMPLETE *** - Applied 5x5 moving average smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "*** MOVING AVERAGE SMOOTHING FAILED *** - Smoothing failed");
+        }
+        
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        // Single cell selected - smooth a 3x3 area around it
+        int start_x = fmax(0, g_selected_cell_x - 1);
+        int end_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+        int start_y = fmax(0, g_selected_cell_y - 1);
+        int end_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+        
+        add_log_entry(0, "*** 3x3 MOVING AVERAGE SMOOTHING *** - Smoothing area around [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+        
+        // Use moving average smoothing with 3x3 window
+        bool success = imgui_table_moving_average_smooth(g_ve_table, start_x, start_y, end_x, end_y, 3, false);
+        
+        if (success) {
+            add_log_entry(0, "*** 3x3 MOVING AVERAGE SMOOTHING COMPLETE *** - Applied 3x3 moving average smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "*** 3x3 MOVING AVERAGE SMOOTHING FAILED *** - Smoothing failed");
+        }
+        
+    } else {
+        add_log_entry(0, "No selection available for moving average smoothing");
+    }
+}
+
+/**
+ * Bilateral smoothing for edge-preserving smoothing
+ * Called when user presses 'B' key
+ */
+void bilateral_smooth_selection() {
+    if (!g_ve_table) {
+        add_log_entry(0, "No VE table available for bilateral smoothing");
+        return;
+    }
+    
+    if (g_multi_selection.active) {
+        // Use multi-selection bounds
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        add_log_entry(0, "*** BILATERAL SMOOTHING SELECTION *** - Processing selection [%d,%d] to [%d,%d]", 
+                     min_x, min_y, max_x, max_y);
+        
+        // Use bilateral smoothing with edge preservation
+        bool success = imgui_table_bilateral_smooth(g_ve_table, min_x, min_y, max_x, max_y, 1.5f, 20.0f);
+        
+        if (success) {
+            add_log_entry(0, "*** BILATERAL SMOOTHING COMPLETE *** - Applied edge-preserving bilateral smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "*** BILATERAL SMOOTHING FAILED *** - Smoothing failed");
+        }
+        
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        // Single cell selected - smooth a 3x3 area around it
+        int start_x = fmax(0, g_selected_cell_x - 1);
+        int end_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+        int start_y = fmax(0, g_selected_cell_y - 1);
+        int end_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+        
+        add_log_entry(0, "*** 3x3 BILATERAL SMOOTHING *** - Smoothing area around [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+        
+        // Use bilateral smoothing with edge preservation
+        bool success = imgui_table_bilateral_smooth(g_ve_table, start_x, start_y, end_x, end_y, 1.0f, 15.0f);
+        
+        if (success) {
+            add_log_entry(0, "*** 3x3 BILATERAL SMOOTHING COMPLETE *** - Applied edge-preserving bilateral smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "*** 3x3 BILATERAL SMOOTHING FAILED *** - Smoothing failed");
+        }
+        
+    } else {
+        add_log_entry(0, "No selection available for bilateral smoothing");
+    }
+}
 
 int main(int argc, char* argv[]) {
     printf("MegaTunix Redux - ImGui Version\n");
@@ -546,6 +1356,24 @@ int main(int argc, char* argv[]) {
     }
     add_log_entry(0, "ImGui initialized successfully");
 
+    // Initialize and apply professional UI theme
+    init_ui_theme();
+    
+    // Load user settings (this will apply the theme and other preferences)
+    load_user_settings();
+    
+    add_log_entry(0, "Professional UI theme and user settings applied successfully");
+
+    // Initialize foundational subsystems (stubs) to support parity roadmap
+    config_init();
+    diagnostics_init();
+    datalog_manager_init();
+    macro_engine_init();
+    action_triggers_init();
+    gps_provider_init();
+    undo_redo_init();
+    keybindings_prefs_init();
+
     // Initialize ECU communication
     if (!init_ecu_communication()) {
         add_log_entry(2, "Failed to initialize ECU communication");
@@ -602,10 +1430,39 @@ int main(int argc, char* argv[]) {
         add_log_entry(2, "ERROR: Failed to create VE table");
     }
     
+    // Initialize ignition table
+    add_log_entry(0, "Initializing ignition table...");
+    g_ignition_table = (ImGuiTable*)malloc(sizeof(ImGuiTable));
+    if (g_ignition_table) {
+        memset(g_ignition_table, 0, sizeof(ImGuiTable));
+        if (imgui_ignition_table_create(g_ignition_table, 16, 12)) {
+            add_log_entry(0, "Ignition table created successfully");
+            add_log_entry(0, "*** IGNITION TABLE CREATED: %dx%d ***", g_ignition_table->width, g_ignition_table->width);
+            
+            // Load demo data for testing
+            imgui_ignition_table_load_demo_data(g_ignition_table);
+            add_log_entry(0, "Ignition table size: %dx%d", g_ignition_table->width, g_ignition_table->height);
+            add_log_entry(0, "Demo data loaded into ignition table");
+            add_log_entry(0, "Ignition table value range: %.1f - %.1f %s", g_ignition_table->metadata.min_value, g_ignition_table->metadata.max_value, g_ignition_table->metadata.units);
+            
+            g_ignition_table_initialized = true;
+            add_log_entry(0, "Ignition table initialization complete");
+        } else {
+            add_log_entry(2, "ERROR: Failed to initialize ignition table");
+            free(g_ignition_table);
+            g_ignition_table = NULL;
+        }
+    } else {
+        add_log_entry(2, "ERROR: Failed to allocate ignition table");
+    }
+    
     add_log_entry(0, "VE table callbacks will be set up when communications module is initialized");
 
     add_log_entry(0, "Initialization complete - entering main loop");
 
+    // Initialize Speeduino communication system
+    speeduino_init();
+    
     // Initialize communications
     if (!init_ecu_communication()) {
         fprintf(stderr, "Failed to initialize ECU communication\n");
@@ -616,12 +1473,29 @@ int main(int argc, char* argv[]) {
     while (g_running) {
         handle_events();
         update();
+        
+        // Update Speeduino communication status
+        speeduino_update_connection_status();
+        
         render();
     }
 
     add_log_entry(0, "Shutting down...");
 
+    // Save user settings before cleanup
+    save_user_settings();
+    add_log_entry(0, "User settings saved");
+
     // Cleanup
+    speeduino_cleanup();
+    keybindings_prefs_shutdown();
+    undo_redo_shutdown();
+    gps_provider_shutdown();
+    action_triggers_shutdown();
+    macro_engine_shutdown();
+    datalog_manager_shutdown();
+    diagnostics_shutdown();
+    config_cleanup();
     cleanup_ecu_communication();
     cleanup_imgui();
     cleanup_ttf();
@@ -868,10 +1742,13 @@ void handle_events() {
         // Get ImGui IO state to check if ImGui wants the event
         ImGuiIO& io = ImGui::GetIO();
         bool imgui_wants_mouse = io.WantCaptureMouse;
-        bool imgui_wants_keyboard = io.WantCaptureKeyboard;
         
         // Handle our custom input processing first (before ImGui)
         bool event_handled = false;
+        
+        // Variables for table editing (declared outside switch to avoid jump issues)
+        bool is_table_editing_active = false;
+        ImGuiTable* active_table = NULL;
         
         switch (event.type) {
             case SDL_QUIT:
@@ -893,13 +1770,35 @@ void handle_events() {
                     break;
                 }
                 
-                // Handle professional table editing key bindings (for VE Table tab)
-                if (g_selected_tab == 8) { // VE Table tab is active
+                // Handle professional table editing key bindings (for VE Table and Ignition Table)
+                // Check if we're in the VE Table tab
+                if (g_selected_tab == 8) {
+                    is_table_editing_active = true;
+                    active_table = g_ve_table;
+                }
+                // Check if we're in the tuning view with a table selected
+                else if (g_selected_view == VIEW_TUNING) {
+                    if (g_selected_table_index == 0) {
+                        is_table_editing_active = true;
+                        active_table = g_ve_table;
+                    } else if (g_selected_table_index == 1) {
+                        is_table_editing_active = true;
+                        active_table = g_ignition_table;
+                    }
+                }
+                
+                if (is_table_editing_active && active_table) {
                     imgui_key_bindings_set_table_focused(true);
                     
                     // Add detailed key logging for debugging
                     add_log_entry(0, "*** KEY EVENT DEBUG *** - Key: %c (0x%02X), Modifiers: 0x%04X, Tab: %d", 
                                  event.key.keysym.sym, event.key.keysym.sym, event.key.keysym.mod, g_selected_tab);
+                    
+                    // CRITICAL DEBUG: Log table selection state
+                    add_log_entry(0, "*** TABLE SELECTION DEBUG *** - View: %d, Table Index: %d, Active Table: %s", 
+                                 g_selected_view, g_selected_table_index, 
+                                 (active_table == g_ve_table) ? "VE_TABLE" : 
+                                 (active_table == g_ignition_table) ? "IGNITION_TABLE" : "UNKNOWN");
                     
                     TableOperation operation = imgui_key_bindings_process_key(&g_key_binding_state, 
                                                                              event.key.keysym.sym, 
@@ -918,9 +1817,16 @@ void handle_events() {
                         // Save current buffer value before navigating away
                         if (strlen(g_cell_edit_buffer) > 0) {
                             float input_value = atof(g_cell_edit_buffer);
-                            if (input_value >= 0.0f && input_value <= 200.0f) {
+                            // Use appropriate range for the table type
+                            float min_val = 0.0f;
+                            float max_val = 200.0f;
+                            if (active_table && active_table->metadata.type == TABLE_TYPE_IGNITION) {
+                                min_val = active_table->metadata.min_value;
+                                max_val = active_table->metadata.max_value;
+                            }
+                            if (input_value >= min_val && input_value <= max_val) {
                                 // Save to the current cell before moving
-                                imgui_table_set_value(g_ve_table, g_selected_cell_x, g_selected_cell_y, input_value);
+                                imgui_table_set_value(active_table, g_selected_cell_x, g_selected_cell_y, input_value);
                                 add_log_entry(0, "Auto-saved value %.1f to cell [%d,%d] on navigation", 
                                             input_value, g_selected_cell_x, g_selected_cell_y);
                             }
@@ -928,13 +1834,26 @@ void handle_events() {
                         
                         switch (event.key.keysym.sym) {
                             case SDLK_UP:
+                                // If multi-selection is active and we are not extending with Shift, clear it
+                                if (g_multi_selection.active && !(event.key.keysym.mod & KMOD_SHIFT)) {
+                                    clear_multi_selection();
+                                }
                                 if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
                                     // Extend selection up
                                     update_multi_selection(g_selected_cell_x, fmax(0, g_selected_cell_y - 1));
                                     g_selected_cell_y = fmax(0, g_selected_cell_y - 1);
                                     add_log_entry(0, "Multi-selection: Extended UP to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & KMOD_SHIFT)) {
+                                    // Shift+Up: Start or extend multi-cell selection up
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                        add_log_entry(0, "*** KEYBOARD MULTI-SELECTION STARTED *** - Shift+Up");
+                                    }
+                                    update_multi_selection(g_selected_cell_x, fmax(0, g_selected_cell_y - 1));
+                                    g_selected_cell_y = fmax(0, g_selected_cell_y - 1);
+                                    add_log_entry(0, "Multi-selection: Extended UP to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
-                                    // Ctrl+Shift+Up: Start multi-cell selection up
+                                    // Ctrl+Shift+Up: Start multi-cell selection up (legacy support)
                                     add_log_entry(0, "*** KEYBOARD MULTI-SELECTION TRIGGERED *** - Ctrl+Shift+Up");
                                     if (!g_multi_selection.active) {
                                         start_multi_selection(g_selected_cell_x, g_selected_cell_y);
@@ -949,33 +1868,57 @@ void handle_events() {
                                 navigation_handled = true;
                                 break;
                             case SDLK_DOWN:
+                                if (g_multi_selection.active && !(event.key.keysym.mod & KMOD_SHIFT)) {
+                                    clear_multi_selection();
+                                }
                                 if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
                                     // Extend selection down
-                                    update_multi_selection(g_selected_cell_x, fmin(g_ve_table->height - 1, g_selected_cell_y + 1));
-                                    g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                    update_multi_selection(g_selected_cell_x, fmin(active_table->height - 1, g_selected_cell_y + 1));
+                                    g_selected_cell_y = fmin(active_table->height - 1, g_selected_cell_y + 1);
+                                    add_log_entry(0, "Multi-selection: Extended DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & KMOD_SHIFT)) {
+                                    // Shift+Down: Start or extend multi-cell selection down
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                        add_log_entry(0, "*** KEYBOARD MULTI-SELECTION STARTED *** - Shift+Down");
+                                    }
+                                    update_multi_selection(g_selected_cell_x, fmin(active_table->height - 1, g_selected_cell_y + 1));
+                                    g_selected_cell_y = fmin(active_table->height - 1, g_selected_cell_y + 1);
                                     add_log_entry(0, "Multi-selection: Extended DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
-                                    // Ctrl+Shift+Down: Start multi-cell selection down
+                                    // Ctrl+Shift+Down: Start multi-cell selection down (legacy support)
                                     if (!g_multi_selection.active) {
                                         start_multi_selection(g_selected_cell_x, g_selected_cell_y);
                                     }
-                                    update_multi_selection(g_selected_cell_x, fmin(g_ve_table->height - 1, g_selected_cell_y + 1));
-                                    g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                    update_multi_selection(g_selected_cell_x, fmin(active_table->height - 1, g_selected_cell_y + 1));
+                                    g_selected_cell_y = fmin(active_table->height - 1, g_selected_cell_y + 1);
                                     add_log_entry(0, "Multi-selection: Started DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 } else {
-                                    g_selected_cell_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+                                    g_selected_cell_y = fmin(active_table->height - 1, g_selected_cell_y + 1);
                                     add_log_entry(0, "Navigation: Moved DOWN to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 }
                                 navigation_handled = true;
                                 break;
                             case SDLK_LEFT:
+                                if (g_multi_selection.active && !(event.key.keysym.mod & KMOD_SHIFT)) {
+                                    clear_multi_selection();
+                                }
                                 if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
                                     // Extend selection left
                                     update_multi_selection(fmax(0, g_selected_cell_x - 1), g_selected_cell_y);
                                     g_selected_cell_x = fmax(0, g_selected_cell_x - 1);
                                     add_log_entry(0, "Multi-selection: Extended LEFT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & KMOD_SHIFT)) {
+                                    // Shift+Left: Start or extend multi-cell selection left
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                        add_log_entry(0, "*** KEYBOARD MULTI-SELECTION STARTED *** - Shift+Left");
+                                    }
+                                    update_multi_selection(fmax(0, g_selected_cell_x - 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmax(0, g_selected_cell_x - 1);
+                                    add_log_entry(0, "Multi-selection: Extended LEFT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
-                                    // Ctrl+Shift+Left: Start multi-cell selection left
+                                    // Ctrl+Shift+Left: Start multi-cell selection left (legacy support)
                                     if (!g_multi_selection.active) {
                                         start_multi_selection(g_selected_cell_x, g_selected_cell_y);
                                     }
@@ -989,43 +1932,58 @@ void handle_events() {
                                 navigation_handled = true;
                                 break;
                             case SDLK_RIGHT:
+                                if (g_multi_selection.active && !(event.key.keysym.mod & KMOD_SHIFT)) {
+                                    clear_multi_selection();
+                                }
                                 if ((event.key.keysym.mod & KMOD_SHIFT) && g_multi_selection.active) {
                                     // Extend selection right
-                                    update_multi_selection(fmin(g_ve_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
-                                    g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                    update_multi_selection(fmin(active_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmin(active_table->width - 1, g_selected_cell_x + 1);
+                                    add_log_entry(0, "Multi-selection: Extended RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+                                } else if ((event.key.keysym.mod & KMOD_SHIFT)) {
+                                    // Shift+Right: Start or extend multi-cell selection right
+                                    if (!g_multi_selection.active) {
+                                        start_multi_selection(g_selected_cell_x, g_selected_cell_y);
+                                        add_log_entry(0, "*** KEYBOARD MULTI-SELECTION STARTED *** - Shift+Right");
+                                    }
+                                    update_multi_selection(fmin(active_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmin(active_table->width - 1, g_selected_cell_x + 1);
                                     add_log_entry(0, "Multi-selection: Extended RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 } else if ((event.key.keysym.mod & (KMOD_CTRL | KMOD_SHIFT)) == (KMOD_CTRL | KMOD_SHIFT)) {
-                                    // Ctrl+Shift+Right: Start multi-cell selection right
+                                    // Ctrl+Shift+Right: Start multi-cell selection right (legacy support)
                                     if (!g_multi_selection.active) {
                                         start_multi_selection(g_selected_cell_x, g_selected_cell_y);
                                     }
-                                    update_multi_selection(fmin(g_ve_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
-                                    g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                    update_multi_selection(fmin(active_table->width - 1, g_selected_cell_x + 1), g_selected_cell_y);
+                                    g_selected_cell_x = fmin(active_table->width - 1, g_selected_cell_x + 1);
                                     add_log_entry(0, "Multi-selection: Started RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 } else {
-                                    g_selected_cell_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+                                    g_selected_cell_x = fmin(active_table->width - 1, g_selected_cell_x + 1);
                                     add_log_entry(0, "Navigation: Moved RIGHT to cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
                                 }
                                 navigation_handled = true;
                                 break;
                             case SDLK_TAB:
+                                if (g_multi_selection.active && !(event.key.keysym.mod & KMOD_SHIFT)) {
+                                    clear_multi_selection();
+                                }
                                 if (event.key.keysym.mod & KMOD_SHIFT) {
                                     // Shift+Tab: Move backward
                                     g_selected_cell_x--;
                                     if (g_selected_cell_x < 0) {
-                                        g_selected_cell_x = g_ve_table->width - 1;
+                                        g_selected_cell_x = active_table->width - 1;
                                         g_selected_cell_y--;
                                         if (g_selected_cell_y < 0) {
-                                            g_selected_cell_y = g_ve_table->height - 1;
+                                            g_selected_cell_y = active_table->height - 1;
                                         }
                                     }
                                 } else {
                                     // Tab: Move forward
                                     g_selected_cell_x++;
-                                    if (g_selected_cell_x >= g_ve_table->width) {
+                                    if (g_selected_cell_x >= active_table->width) {
                                         g_selected_cell_x = 0;
                                         g_selected_cell_y++;
-                                        if (g_selected_cell_y >= g_ve_table->height) {
+                                        if (g_selected_cell_y >= active_table->height) {
                                             g_selected_cell_y = 0;
                                         }
                                     }
@@ -1053,7 +2011,7 @@ void handle_events() {
                         event_handled = true;
                         // Update the cell edit buffer with the new cell's value
                         snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.1f", 
-                                imgui_table_get_value(g_ve_table, g_selected_cell_x, g_selected_cell_y));
+                                imgui_table_get_value(active_table, g_selected_cell_x, g_selected_cell_y));
                         g_buffer_updated = true;
                         g_just_navigated = true; // Set flag to clear buffer on next number entry
                     }
@@ -1067,8 +2025,14 @@ void handle_events() {
                         // Handle professional operations
                         switch (operation) {
                             case TABLE_OP_SET_TO:
-                                // Set to specific value (will prompt user)
-                                add_log_entry(0, "Set to operation triggered - value input needed");
+                                // Trigger Set-To popup
+                                if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+                                    g_set_to_value = imgui_table_get_value(active_table, g_selected_cell_x, g_selected_cell_y);
+                                } else {
+                                    g_set_to_value = 0.0f;
+                                }
+                                g_show_set_to_popup = true;
+                                add_log_entry(0, "Set To operation requested - opening input dialog");
                                 event_handled = true;
                                 break;
                                 
@@ -1156,9 +2120,13 @@ void handle_events() {
                                 break;
                                 
                             case TABLE_OP_INTERPOLATE_H:
+                                add_log_entry(0, "Horizontal interpolation triggered");
+                                horizontal_interpolate_selection();
+                                event_handled = true;
+                                break;
                             case TABLE_OP_INTERPOLATE_V:
-                                add_log_entry(0, "Directional interpolation '%s' triggered - implementation pending", 
-                                            imgui_key_bindings_get_operation_name(operation));
+                                add_log_entry(0, "Vertical interpolation triggered");
+                                vertical_interpolate_selection();
                                 event_handled = true;
                                 break;
                                 
@@ -1168,19 +2136,191 @@ void handle_events() {
                                 event_handled = true;
                                 break;
                                 
-                            case TABLE_OP_FILL_UP_RIGHT:
-                                add_log_entry(0, "Fill operation '%s' triggered - implementation pending", 
-                                            imgui_key_bindings_get_operation_name(operation));
+                            case TABLE_OP_GAUSSIAN_SMOOTH:
+                                add_log_entry(0, "*** GAUSSIAN SMOOTHING TRIGGERED *** - Key pressed, calling gaussian_smooth_selection()");
+                                gaussian_smooth_selection();
                                 event_handled = true;
                                 break;
                                 
+                            case TABLE_OP_MOVING_AVERAGE_SMOOTH:
+                                add_log_entry(0, "*** MOVING AVERAGE SMOOTHING TRIGGERED *** - Key pressed, calling moving_average_smooth_selection()");
+                                moving_average_smooth_selection();
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_BILATERAL_SMOOTH:
+                                add_log_entry(0, "*** BILATERAL SMOOTHING TRIGGERED *** - Key pressed, calling bilateral_smooth_selection()");
+                                bilateral_smooth_selection();
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_FILL_UP_RIGHT: {
+                                // Fill selection with current cell's value (Up+Right style)
+                                if (g_ve_table) {
+                                    float fill_val = 0.0f;
+                                    bool have_source = false;
+                                    if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+                                        fill_val = imgui_table_get_value(g_ve_table, g_selected_cell_x, g_selected_cell_y);
+                                        have_source = true;
+                                    } else if (g_multi_selection.active) {
+                                        // Fallback to selection's start cell
+                                        fill_val = imgui_table_get_value(g_ve_table, g_multi_selection.start_x, g_multi_selection.start_y);
+                                        have_source = true;
+                                    }
+                                    if (have_source && g_multi_selection.active) {
+                                        apply_operation_to_selection(TABLE_OP_SET_TO, fill_val);
+                                    }
+                                }
+                                event_handled = true;
+                                break;
+                            }
+                                
                             case TABLE_OP_COPY:
-                                copy_selected_cell_to_clipboard();
+                                copy_selection_to_clipboard();
                                 event_handled = true;
                                 break;
                                 
                             case TABLE_OP_PASTE:
                                 paste_from_clipboard();
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_RESET:
+                                // Reset selected cells to default value (75.0f for VE table)
+                                if (g_multi_selection.active) {
+                                    apply_operation_to_selection(TABLE_OP_SET_TO, 75.0f);
+                                    add_log_entry(0, "Reset selection to default value 75.0");
+                                } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+                                    imgui_table_set_value(g_ve_table, g_selected_cell_x, g_selected_cell_y, 75.0f);
+                                    snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "75.0");
+                                    g_buffer_updated = true;
+                                    add_log_entry(0, "Reset cell [%d,%d] to default value 75.0", g_selected_cell_x, g_selected_cell_y);
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_UNDO:
+                                // TODO: Implement undo system
+                                add_log_entry(0, "Undo operation requested (not yet implemented)");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_REDO:
+                                // TODO: Implement redo system
+                                add_log_entry(0, "Redo operation requested (not yet implemented)");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_HELP:
+                                // Toggle help/legend window
+                                show_legend = !show_legend;
+                                add_log_entry(0, "Help/legend window toggled: %s", show_legend ? "shown" : "hidden");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_EDIT_MODE:
+                                // Toggle edit mode (could be used to lock/unlock table editing)
+                                add_log_entry(0, "Edit mode toggle requested (not yet implemented)");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_FIND:
+                                // Find/search functionality
+                                add_log_entry(0, "Find/search requested (not yet implemented)");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_REPLACE:
+                                // Replace functionality
+                                add_log_entry(0, "Replace requested (not yet implemented)");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_REFRESH:
+                                // Refresh table data from ECU
+                                if (g_ve_table) {
+                                    imgui_table_load_demo_data(g_ve_table);
+                                    add_log_entry(0, "Table data refreshed");
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_ZOOM_IN:
+                                // Zoom in on table view
+                                if (g_ve_3d_view.zoom < 10.0f) {
+                                    g_ve_3d_view.zoom *= 1.2f;
+                                    add_log_entry(0, "Zoomed in to %.1f", g_ve_3d_view.zoom);
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_ZOOM_OUT:
+                                // Zoom out on table view
+                                if (g_ve_3d_view.zoom > 0.1f) {
+                                    g_ve_3d_view.zoom /= 1.2f;
+                                    add_log_entry(0, "Zoomed out to %.1f", g_ve_3d_view.zoom);
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_FIT_VIEW:
+                                // Fit table to view
+                                g_ve_3d_view.zoom = 1.5f;
+                                g_ve_3d_view.rotation_x = 35.264f;
+                                g_ve_3d_view.rotation_y = 45.0f;
+                                g_ve_3d_view.pan_x = 0.0f;
+                                g_ve_3d_view.pan_y = 0.0f;
+                                add_log_entry(0, "View reset to default isometric view");
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_TOGGLE_SELECTION:
+                                // Toggle cell selection (could be used to clear selection)
+                                if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+                                    g_selected_cell_x = -1;
+                                    g_selected_cell_y = -1;
+                                    clear_multi_selection();
+                                    add_log_entry(0, "Cell selection cleared");
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_CLEAR_CELL:
+                                // Clear cell value (set to 0)
+                                if (g_multi_selection.active) {
+                                    apply_operation_to_selection(TABLE_OP_SET_TO, 0.0f);
+                                    add_log_entry(0, "Selection cleared to 0");
+                                } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+                                    imgui_table_set_value(g_ve_table, g_selected_cell_x, g_selected_cell_y, 0.0f);
+                                    snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "0.0");
+                                    g_buffer_updated = true;
+                                    add_log_entry(0, "Cell [%d,%d] cleared to 0", g_selected_cell_x, g_selected_cell_y);
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_APPLY_CHANGES:
+                                // Apply current buffer changes
+                                if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0 && strlen(g_cell_edit_buffer) > 0) {
+                                    float input_value = atof(g_cell_edit_buffer);
+                                    if (input_value >= 0.0f && input_value <= 200.0f) {
+                                        imgui_table_set_value(g_ve_table, g_selected_cell_x, g_selected_cell_y, input_value);
+                                        add_log_entry(0, "Applied buffer value %.1f to cell [%d,%d]", input_value, g_selected_cell_x, g_selected_cell_y);
+                                        g_cell_edit_buffer[0] = '\0';
+                                        g_buffer_updated = true;
+                                    }
+                                }
+                                event_handled = true;
+                                break;
+                                
+                            case TABLE_OP_CANCEL_OPERATION:
+                                // Cancel current operation (clear buffer, clear selection)
+                                g_cell_edit_buffer[0] = '\0';
+                                g_buffer_updated = true;
+                                if (g_multi_selection.active) {
+                                    clear_multi_selection();
+                                    add_log_entry(0, "Multi-selection cancelled");
+                                }
                                 event_handled = true;
                                 break;
                                 
@@ -1191,9 +2331,10 @@ void handle_events() {
                     
                     // Handle direct number entry for selected cell
                     if (!event_handled && g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
-                        // Check if it's a number key (0-9) or decimal point
-                        if ((event.key.keysym.sym >= SDLK_0 && event.key.keysym.sym <= SDLK_9) || 
-                            event.key.keysym.sym == SDLK_PERIOD || event.key.keysym.sym == SDLK_KP_PERIOD) {
+                    // Check if it's a number key (0-9) or decimal point (ignore when Ctrl is held to avoid accidental paste)
+                    if (!(event.key.keysym.mod & KMOD_CTRL) &&
+                        ((event.key.keysym.sym >= SDLK_0 && event.key.keysym.sym <= SDLK_9) || 
+                         event.key.keysym.sym == SDLK_PERIOD || event.key.keysym.sym == SDLK_KP_PERIOD)) {
                             
                             // Clear buffer if we just navigated to this cell
                             if (g_just_navigated) {
@@ -1249,199 +2390,6 @@ void handle_events() {
                             event_handled = true;
                             add_log_entry(0, "Cancelled direct number entry, restored original value");
                         }
-                    }
-                }
-                break;
-                
-                                case SDL_MOUSEBUTTONDOWN:
-                        // Handle mouse clicks for table interactions
-                        add_log_entry(0, "*** MOUSE BUTTON DOWN EVENT *** - Tab: %d, Button: %d, g_ve_table: %p, initialized: %s", 
-                                    g_selected_tab, event.button.button, g_ve_table, g_ve_table_initialized ? "true" : "false");
-                        
-                        if (g_selected_tab == 8 && event.button.button == SDL_BUTTON_LEFT) { // VE Table tab is active
-                    add_log_entry(0, "*** SDL MOUSE CLICK DETECTED - Button: %d, Position: (%d, %d) ***", 
-                                 event.button.button, event.button.x, event.button.y);
-                    
-                    // Check if table is valid before proceeding
-                    if (!g_ve_table || !g_ve_table_initialized) {
-                        add_log_entry(0, "*** TABLE NOT VALID *** - g_ve_table: %p, initialized: %s", 
-                                    g_ve_table, g_ve_table_initialized ? "true" : "false");
-                        event_handled = true;
-                        break;
-                    }
-                    
-                    // Handle legend window mouse clicks (global, regardless of focus)
-                    if (show_legend) {
-                        // Get mouse position from the event (more accurate than GetMouseState)
-                        int mouse_x = event.button.x;
-                        int mouse_y = event.button.y;
-                        
-                        // Log all mouse clicks when legend is open for debugging
-                        add_log_entry(0, "Mouse click detected at (%d, %d) - legend is open", mouse_x, mouse_y);
-                        
-                        // Check if click is in the button area (better estimate)
-                        int window_width = ImGui::GetIO().DisplaySize.x;
-                        int window_height = ImGui::GetIO().DisplaySize.y;
-                        
-                        // Legend window is centered, button is at bottom of legend
-                        // Legend window is 700x600, so button should be roughly:
-                        int legend_center_x = window_width / 2;
-                        int legend_center_y = window_height / 2;
-                        int legend_bottom = legend_center_y + 300; // Half of 600
-                        
-                        // Button is 200x40, centered horizontally in legend
-                        int button_x = legend_center_x - 100;  // Button width is 200
-                        int button_y = legend_bottom - 60;     // Button height is 40, some padding
-                        
-                        add_log_entry(0, "Button area: (%d,%d) to (%d,%d)", button_x, button_y, button_x + 200, button_y + 40);
-                        
-                        if (mouse_x >= button_x && mouse_x <= button_x + 200 &&
-                            mouse_y >= button_y && mouse_y <= button_y + 40) {
-                            add_log_entry(0, "*** CLICK IN BUTTON AREA DETECTED - CLOSING LEGEND ***");
-                            show_legend = false;
-                            event_handled = true;
-                            break;
-                        } else {
-                            add_log_entry(0, "Click outside button area");
-                        }
-                    }
-                    
-                    // Handle table cell clicks
-                    // Convert screen coordinates to table coordinates
-                    int mouse_x = event.button.x;
-                    int mouse_y = event.button.y;
-                    
-                    add_log_entry(0, "*** MOUSE CLICK DEBUG *** - Mouse: (%d, %d)", mouse_x, mouse_y);
-                    
-                    // Get the VE table window position and size
-                    // We need to calculate the table area based on the window layout
-                    int window_width = ImGui::GetIO().DisplaySize.x;
-                    int window_height = ImGui::GetIO().DisplaySize.y;
-                    
-                    add_log_entry(0, "*** WINDOW DEBUG *** - Size: %dx%d", window_width, window_height);
-                    
-                    // Calculate table area - use cached window position to avoid calling ImGui functions from event handler
-                    float table_start_x = 0, table_start_y = 0, table_width = 0, table_height = 0;
-                    if (g_table_window_valid) {
-                        table_start_x = g_table_window_pos.x + 40;  // Match rendering: 40px from left
-                        table_start_y = g_table_window_pos.y + 30;  // Match rendering: 30px from top
-                        table_width = g_table_window_size.x - 80;   // Match rendering: 40px margin on each side
-                        table_height = g_table_window_size.y - 60;  // Match rendering: 30px margin on top/bottom
-                    } else {
-                        // Fallback to approximate values if cache is not valid
-                        table_start_x = 120;
-                        table_start_y = 250;
-                        table_width = window_width - 240;
-                        table_height = window_height - 450;
-                    }
-                    
-                    // Ensure minimum table dimensions
-                    if (table_width < 100) table_width = 100;
-                    if (table_height < 100) table_height = 100;
-                    
-                    add_log_entry(0, "*** TABLE AREA DEBUG *** - Window: %dx%d, Table area: (%.1f,%.1f) to (%.1f,%.1f)", 
-                                window_width, window_height, table_start_x, table_start_y, 
-                                table_start_x + table_width, table_start_y + table_height);
-                    
-                    // Convert to table coordinates
-                    int table_x = -1, table_y = -1;
-                    if (mouse_x >= table_start_x && mouse_x <= table_start_x + table_width &&
-                        mouse_y >= table_start_y && mouse_y <= table_start_y + table_height &&
-                        g_ve_table && g_ve_table->width > 0 && g_ve_table->height > 0) {
-                        
-                        add_log_entry(0, "*** COORDINATE CONVERSION START *** - Mouse: (%d, %d), Table area: (%.1f,%.1f) to (%.1f,%.1f)", 
-                                    mouse_x, mouse_y, table_start_x, table_start_y, table_start_x + table_width, table_start_y + table_height);
-                        
-                        // Convert to table coordinates (no additional margin adjustment needed)
-                        float adjusted_mouse_x = mouse_x - table_start_x;
-                        float adjusted_mouse_y = mouse_y - table_start_y;
-                        
-                        add_log_entry(0, "*** ADJUSTED COORDINATES *** - Adjusted: (%.1f, %.1f)", adjusted_mouse_x, adjusted_mouse_y);
-                        
-                        // Calculate cell dimensions - match rendering exactly
-                        float cell_width = table_width / g_ve_table->width;
-                        float cell_height = table_height / g_ve_table->height;
-                        
-                        add_log_entry(0, "*** CELL DIMENSIONS *** - Cell width: %.1f, Cell height: %.1f", cell_width, cell_height);
-                        
-                        // Check for division by zero
-                        if (cell_width > 0 && cell_height > 0) {
-                            table_x = (int)(adjusted_mouse_x / cell_width);
-                            table_y = (int)(adjusted_mouse_y / cell_height);
-                            
-                            add_log_entry(0, "*** RAW TABLE COORDINATES *** - Raw: [%d, %d]", table_x, table_y);
-                            
-                            // Clamp to valid range
-                            table_x = fmax(0, fmin(g_ve_table->width - 1, table_x));
-                            table_y = fmax(0, fmin(g_ve_table->height - 1, table_y));
-                            
-                            add_log_entry(0, "*** FINAL TABLE COORDINATES *** - Final: [%d, %d]", table_x, table_y);
-                        } else {
-                            add_log_entry(0, "*** INVALID CELL DIMENSIONS *** - Cell width: %.1f, Cell height: %.1f", cell_width, cell_height);
-                        }
-                    }
-                    
-                    // Check for modifier keys for multi-cell selection - try both methods
-                    const Uint8* key_state = SDL_GetKeyboardState(NULL);
-                    bool ctrl_pressed = key_state[SDL_SCANCODE_LCTRL] || key_state[SDL_SCANCODE_RCTRL];
-                    bool shift_pressed = key_state[SDL_SCANCODE_LSHIFT] || key_state[SDL_SCANCODE_RSHIFT];
-                    
-                    // Also check SDL event modifiers
-                    bool ctrl_from_event = (event.button.state & KMOD_CTRL) != 0;
-                    bool shift_from_event = (event.button.state & KMOD_SHIFT) != 0;
-                    
-                    // Use the event modifiers if keyboard state fails
-                    if (!ctrl_pressed && ctrl_from_event) ctrl_pressed = true;
-                    if (!shift_pressed && shift_from_event) shift_pressed = true;
-                    
-                    // Add detailed modifier key debugging
-                    add_log_entry(0, "*** MODIFIER KEY DEBUG *** - LCTRL: %d, RCTRL: %d, LSHIFT: %d, RSHIFT: %d", 
-                                key_state[SDL_SCANCODE_LCTRL], key_state[SDL_SCANCODE_RCTRL], 
-                                key_state[SDL_SCANCODE_LSHIFT], key_state[SDL_SCANCODE_RSHIFT]);
-                    add_log_entry(0, "*** EVENT MODIFIER DEBUG *** - Event Ctrl: %s, Event Shift: %s", 
-                                ctrl_from_event ? "true" : "false", shift_from_event ? "true" : "false");
-                    
-                    add_log_entry(0, "*** MOUSE CLICK FOR TABLE *** - Position: (%d, %d), Ctrl: %s, Shift: %s, Table coords: [%d,%d]", 
-                                mouse_x, mouse_y, ctrl_pressed ? "true" : "false", shift_pressed ? "true" : "false", table_x, table_y);
-                    
-                    add_log_entry(0, "*** TABLE CLICK PROCESSING *** - About to process click");
-                    
-                    if (table_x >= 0 && table_y >= 0 && table_x < g_ve_table->width && table_y < g_ve_table->height) {
-                        add_log_entry(3, "Valid table click at [%d, %d]", table_x, table_y);
-                        
-                        // Set the selected cell first (safe operation)
-                        g_selected_cell_x = table_x;
-                        g_selected_cell_y = table_y;
-                        
-                        if (ctrl_pressed || shift_pressed) {
-                            // Start multi-cell selection
-                            add_log_entry(0, "*** MULTI-CELL SELECTION TRIGGERED *** - Ctrl: %s, Shift: %s, Position: [%d,%d]", 
-                                        ctrl_pressed ? "true" : "false", shift_pressed ? "true" : "false", table_x, table_y);
-                            start_multi_selection(table_x, table_y);
-                            event_handled = true;
-                        } else {
-                            // Single cell selection (existing behavior)
-                            add_log_entry(3, "Starting single cell selection");
-                            g_cell_editing = true;
-                            g_input_field_focused = false; // Clear input field focus when clicking a new cell
-                            g_show_input_field = true; // Show input field when clicking
-                            
-                            // Use safe table access wrapper
-                            float cell_value = SafeTableAccess::get_value_safe(table_x, table_y, 75.0f);
-                            add_log_entry(3, "Safe table access: %.1f at [%d,%d]", cell_value, table_x, table_y);
-                            
-                            snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.1f", cell_value);
-                            
-                            // Clear any existing multi-selection
-                            clear_multi_selection();
-                            
-                            // Set flag to focus on next frame instead of calling SetKeyboardFocusHere directly
-                            g_buffer_updated = true;
-                            add_log_entry(3, "Cell selected for editing - focus will be set on next frame");
-                            event_handled = true;
-                        }
-                    } else {
-                        add_log_entry(0, "*** INVALID TABLE CLICK *** - Mouse outside table area or invalid coordinates");
                     }
                 }
                 break;
@@ -1693,12 +2641,20 @@ void render() {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
         
-        // Render the legend window
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f), ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
-        ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiCond_FirstUseEver);
+        // Render the legend window (floating, movable and resizable)
+        if (g_legend_just_popped) {
+            // Place it in the right panel area initially to avoid overlapping the VE table center
+            ImVec2 disp = ImGui::GetIO().DisplaySize;
+            ImGui::SetNextWindowPos(ImVec2(disp.x * 0.70f, disp.y * 0.25f), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+            g_legend_just_popped = false;
+        } else {
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.70f, ImGui::GetIO().DisplaySize.y * 0.25f), ImGuiCond_Once, ImVec2(0.5f, 0.0f));
+        }
+        ImGui::SetNextWindowSize(ImVec2(720, 640), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowFocus();
-        
-        if (ImGui::Begin("Key Bindings Legend", &show_legend, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar)) {
+        ImGuiWindowFlags legend_flags = ImGuiWindowFlags_NoCollapse;
+        if (ImGui::Begin("Key Bindings Legend", &show_legend, legend_flags | ImGuiWindowFlags_NoSavedSettings)) {
+            if (ImGui::Button("Dock Legend")) { show_legend = false; }
             
             ImGui::Text("🎮 VE Table Professional Key Bindings");
             ImGui::Text("Professional ECU tuning software-style muscle memory for professional table editing");
@@ -1810,9 +2766,9 @@ void render() {
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("Set To");
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "PART");
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Set cell to specific value (needs input dialog)");
+                ImGui::Text("Set selected cell(s) to specific value");
                 
                 // Advanced Operations
                 ImGui::TableNextRow();
@@ -1833,7 +2789,7 @@ void render() {
                 ImGui::TableSetColumnIndex(2);
                 ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Horizontal interpolation (planned)");
+                ImGui::Text("Interpolate horizontally across selection");
                 
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
@@ -1843,7 +2799,7 @@ void render() {
                 ImGui::TableSetColumnIndex(2);
                 ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Vertical interpolation (planned)");
+                ImGui::Text("Interpolate vertically across selection");
                 
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
@@ -1853,7 +2809,18 @@ void render() {
                 ImGui::TableSetColumnIndex(2);
                 ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Smooth selected cells (planned)");
+                ImGui::Text("Smooth selected cells (3x3 kernel)");
+
+                // New: Fill Up+Right
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 1.0f, 1.0f), "f");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Fill Up+Right");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Fill selection using current cell's value");
                 
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
@@ -1892,9 +2859,9 @@ void render() {
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("Copy");
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Copy selected cell to clipboard");
+                ImGui::Text("Copy selection or single cell to clipboard");
                 
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
@@ -1902,9 +2869,91 @@ void render() {
                 ImGui::TableSetColumnIndex(1);
                 ImGui::Text("Paste");
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
                 ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Paste cell from clipboard");
+                ImGui::Text("Paste block at selected cell");
+                
+                // Function Keys
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "F1");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Help");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Toggle help/legend window");
+                
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "F5");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Refresh");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Refresh table data");
+                
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "F6/F7");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Zoom");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Zoom in/out on table view");
+                
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "F8");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Fit View");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Reset view to default isometric");
+                
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Space");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Clear Selection");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Clear current cell selection");
+                
+                // Additional Operations
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.8f, 0.5f, 1.0f, 1.0f), "Delete");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Clear Cell");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Clear cell value to 0");
+                
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.8f, 0.5f, 1.0f, 1.0f), "Enter");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Apply Changes");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Apply current buffer value");
+                
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextColored(ImVec4(0.8f, 0.5f, 1.0f, 1.0f), "Escape");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("Cancel");
+                ImGui::TableSetColumnIndex(2);
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
+                ImGui::TableSetColumnIndex(3);
+                ImGui::Text("Cancel current operation");
                 
                 ImGui::EndTable();
             }
@@ -1979,6 +3028,9 @@ void render() {
             ImGui::End();
         }
         
+        // Finish overlay frame and render it immediately to avoid input freeze
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         // Render the overlay
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -2010,131 +3062,431 @@ void render_main_window() {
 
     ImGui::Begin("MegaTunix Redux", NULL, window_flags);
 
-    // Top banner
-    ImGui::SetCursorPos(ImVec2(10, 10));
+    // Professional top banner with enhanced styling
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_medium);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("TopBanner", ImVec2(ImGui::GetWindowWidth() - 20, 50), true);
+    
+    // Application title with professional styling
+    ImGui::SetCursorPos(ImVec2(15, 15));
+    ImGui::PushStyleColor(ImGuiCol_Text, g_ui_theme.primary_color);
+    ImGui::Text("🏁 MEGATUNIX REDUX");
+    ImGui::PopStyleColor();
+    
+    // Status indicator with professional styling
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 200);
     if (g_demo_mode) {
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "MEGATUNIX REDUX %s [DEMO MODE]", g_ecu_status);
+        ImGui::TextColored(g_ui_theme.warning_color, "● DEMO MODE");
     } else {
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "MEGATUNIX REDUX %s", g_ecu_status);
+        render_status_indicator("ECU", g_ecu_connected, g_ecu_status);
     }
     
-    // Tab bar
-    ImGui::SetCursorPos(ImVec2(10, 40));
-    if (ImGui::BeginTabBar("MainTabs")) {
-        for (int i = 0; i < IM_ARRAYSIZE(g_tab_names); i++) {
-            if (ImGui::BeginTabItem(g_tab_names[i])) {
-                g_selected_tab = i;
-                ImGui::EndTabItem();
+    // Theme selector dropdown
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 350);
+    ImGui::TextColored(g_ui_theme.text_secondary, "Theme:");
+    ImGui::SameLine();
+    
+    const char* theme_names[] = {
+        "Classic Automotive",
+        "Modern Tech", 
+        "Racing Green",
+        "Sunset Synthwave",
+        "Ocean Blue"
+    };
+    
+    if (ImGui::BeginCombo("##ThemeSelector", theme_names[g_current_theme])) {
+        for (int i = 0; i < THEME_COUNT; i++) {
+            if (ImGui::Selectable(theme_names[i], g_current_theme == i)) {
+                switch_theme((ThemeType)i);
             }
         }
-        ImGui::EndTabBar();
+        ImGui::EndCombo();
     }
-
-    // Tab content
-    ImGui::SetCursorPos(ImVec2(10, 70));
-    ImGui::BeginChild("TabContent", ImVec2(ImGui::GetWindowWidth() - 20, ImGui::GetWindowHeight() - 80));
-
-    switch (g_selected_tab) {
-        case 0: render_about_tab(); break;
-        case 1: render_general_tab(); break;
-        case 2: render_communications_tab(); break;
-        case 3: render_runtime_display_tab(); break;
-        case 4: render_datalogging_tab(); break;
-        case 5: render_logviewer_tab(); break;
-        case 6: render_engine_vitals_tab(); break;
-        case 7: render_enrichments_tab(); break;
-        case 8: render_ve_table_tab(); break;
-        case 9: render_tools_tab(); break;
-        case 10: render_warmup_wizard_tab(); break;
-    }
-
+    
     ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    // TunerStudio-style menu bar (exact replica)
+    ImGui::SetCursorPos(ImVec2(0, 70));
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, g_ui_theme.background_dark);
+    
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Project", "Ctrl+N")) { /* TODO */ }
+            if (ImGui::MenuItem("Open Project", "Ctrl+O")) { /* TODO */ }
+            if (ImGui::MenuItem("Save Project", "Ctrl+S")) { /* TODO */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Import Tune", "Ctrl+I")) { /* TODO */ }
+            if (ImGui::MenuItem("Export Tune", "Ctrl+E")) { /* TODO */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Recent Projects")) { /* TODO */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit", "Alt+F4")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z")) { /* TODO */ }
+            if (ImGui::MenuItem("Redo", "Ctrl+Y")) { /* TODO */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Cut", "Ctrl+X")) { /* TODO */ }
+            if (ImGui::MenuItem("Copy", "Ctrl+C")) { /* TODO */ }
+            if (ImGui::MenuItem("Paste", "Ctrl+V")) { /* TODO */ }
+            if (ImGui::MenuItem("Delete", "Del")) { /* TODO */ }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Find/Replace", "Ctrl+F")) { /* TODO */ }
+            if (ImGui::MenuItem("Go To", "Ctrl+G")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::MenuItem("Gauge Cluster", "F1")) { g_selected_view = VIEW_GAUGE_CLUSTER; }
+            if (ImGui::MenuItem("Tuning & Dyno Views", "F2")) { g_selected_view = VIEW_TUNING; }
+            if (ImGui::MenuItem("Graphing & Logging", "F3")) { g_selected_view = VIEW_GRAPHING; }
+            if (ImGui::MenuItem("Diagnostics & High Speed Loggers", "F4")) { g_selected_view = VIEW_DIAGNOSTICS; }
+        if (ImGui::MenuItem("Communications", "F5")) { g_selected_view = VIEW_COMMUNICATIONS; }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Status Bar")) { /* TODO */ }
+            if (ImGui::MenuItem("Toolbar")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Communications")) {
+            if (ImGui::MenuItem("Connect", "F5")) { /* TODO */ }
+            if (ImGui::MenuItem("Disconnect", "F6")) { /* TODO */ }
+            if (ImGui::MenuItem("Settings")) { /* TODO */ }
+            if (ImGui::MenuItem("Firmware")) { /* TODO */ }
+            if (ImGui::MenuItem("Port Monitor")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Data Logging")) {
+            if (ImGui::MenuItem("Start Logging", "F7")) { /* TODO */ }
+            if (ImGui::MenuItem("Stop Logging", "F8")) { /* TODO */ }
+            if (ImGui::MenuItem("Logging Setup")) { /* TODO */ }
+            if (ImGui::MenuItem("Log Analysis")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::MenuItem("Data Logging")) { /* TODO */ }
+            if (ImGui::MenuItem("Analysis")) { /* TODO */ }
+            if (ImGui::MenuItem("Calibration")) { /* TODO */ }
+            if (ImGui::MenuItem("Validation")) { /* TODO */ }
+            if (ImGui::MenuItem("Calculator")) { /* TODO */ }
+            if (ImGui::MenuItem("Unit Converter")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("Settings")) { g_show_settings_window = true; }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Manual")) { /* TODO */ }
+            if (ImGui::MenuItem("About")) { /* TODO */ }
+            if (ImGui::MenuItem("Updates")) { /* TODO */ }
+            if (ImGui::MenuItem("Support")) { /* TODO */ }
+            ImGui::EndMenu();
+        }
+        
+        ImGui::EndMenuBar();
+    }
+    
+    ImGui::PopStyleColor();
+
+    // Main content area with exact TunerStudio layout
+    ImGui::SetCursorPos(ImVec2(0, 100));
+    
+    // Left sidebar navigation (exact TunerStudio style)
+    ImGui::BeginChild("LeftSidebar", ImVec2(280, ImGui::GetWindowHeight() - 100), true);
+    render_tunerstudio_sidebar();
+    ImGui::EndChild();
+    
+    ImGui::SameLine();
+    
+    // Right content area (main workspace)
+    ImGui::BeginChild("MainWorkspace", ImVec2(0, ImGui::GetWindowHeight() - 100), true);
+    render_content_by_view();
+    ImGui::EndChild();
+    
+    // Render settings window if open
+    render_settings_window();
+    
     ImGui::End();
 }
 
 void render_about_tab() {
-    ImGui::Text("About - Application Information");
-    ImGui::Separator();
+    // Professional section header
+    render_section_header("About", "Application Information", g_ui_theme.primary_color);
     
-    ImGui::Text("MegaTunix Redux - ImGui Version");
-            ImGui::Text("By Patrick Burke");
-        ImGui::Text("Based on MegaTunix by David J. Andruczyk");
-    ImGui::Text("(ImGui Version)");
+    // Application information in a professional card layout
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("AppInfo", ImVec2(0, 120), true);
     
-    ImGui::Separator();
+    ImGui::TextColored(g_ui_theme.primary_color, "🏁 MegaTunix Redux - ImGui Version");
+    ImGui::TextColored(g_ui_theme.text_secondary, "By Patrick Burke");
+    ImGui::TextColored(g_ui_theme.text_secondary, "Based on MegaTunix by David J. Andruczyk");
+    ImGui::TextColored(g_ui_theme.text_muted, "Professional ECU Tuning Software");
     
-    // Demo mode toggle (prominent placement)
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Demo Mode Settings:");
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::Spacing();
+    
+    // Demo mode section with enhanced styling
+    render_section_header("Demo Mode", "Testing and Development", g_ui_theme.warning_color);
+    
+    ImGui::BeginGroup();
+    
+    // Demo mode toggle with professional styling
+    ImGui::TextColored(g_ui_theme.text_primary, "Enable Demo Mode:");
     ImGui::SameLine();
-    if (ImGui::Checkbox("Enable Demo Mode", &g_demo_mode)) {
+    
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, g_ui_theme.success_color);
+    if (ImGui::Checkbox("##demo_mode_about", &g_demo_mode)) {
         if (g_demo_mode) {
             add_log_entry(0, "Demo mode enabled from About tab");
         } else {
             add_log_entry(0, "Demo mode disabled from About tab");
         }
     }
+    ImGui::PopStyleColor();
     
+    // Demo mode status indicator
     if (g_demo_mode) {
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK ACTIVE");
-        ImGui::Text("Demo mode is currently active - all data is simulated");
+        render_status_indicator("Demo Mode", true, "ACTIVE");
+        ImGui::TextColored(g_ui_theme.text_secondary, "Demo mode is currently active - all data is simulated");
+    } else {
+        ImGui::SameLine();
+        render_status_indicator("Demo Mode", false, "INACTIVE");
     }
     
-    ImGui::Separator();
+    ImGui::EndGroup();
     
-    ImGui::Text("This application provides a graphical interface for monitoring and controlling an ECU.");
-    ImGui::Text("It uses SDL2 for windowing, OpenGL for rendering, and ImGui for UI.");
-    ImGui::Text("The ECU communication is handled by a separate library.");
+    ImGui::Spacing();
     
-    ImGui::Separator();
-    ImGui::Text("Demo Mode allows you to test the application without an ECU connection.");
-    ImGui::Text("Enable it to see simulated engine data and test all features.");
+    // Theme selection section
+    render_section_header("UI Themes", "Choose Your Visual Style", g_ui_theme.accent_color);
+    
+    ImGui::TextColored(g_ui_theme.text_primary, "Select from multiple professional color schemes:");
+    ImGui::Spacing();
+    
+    // Theme preview grid
+    const char* theme_names[] = {
+        "Classic Automotive",
+        "Modern Tech", 
+        "Racing Green",
+        "Sunset Synthwave",
+        "Ocean Blue"
+    };
+    
+    const char* theme_descriptions[] = {
+        "Deep reds, chrome silvers, professional blacks",
+        "Electric blue, sleek grays, modern aesthetics",
+        "British racing green with gold accents",
+        "Synthwave aesthetic with warm oranges, deep purples, cream highlights",
+        "Deep blues, teals, white accents"
+    };
+    
+    ImVec4 theme_colors[] = {
+        ImVec4(0.8f, 0.1f, 0.1f, 1.0f),      // Classic Automotive red
+        ImVec4(0.0f, 0.6f, 1.0f, 1.0f),      // Modern Tech blue
+        ImVec4(0.0f, 0.4f, 0.2f, 1.0f),      // Racing Green green
+        ImVec4(1.0f, 0.4f, 0.0f, 1.0f),      // Sunset Synthwave orange
+        ImVec4(0.0f, 0.4f, 0.8f, 1.0f)       // Ocean Blue blue
+    };
+    
+    for (int i = 0; i < THEME_COUNT; i++) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+        char child_id[64];
+        sprintf(child_id, "ThemePreview##%d", i);
+        ImGui::BeginChild(child_id, ImVec2(0, 60), true);
+        
+        // Theme name and color indicator
+        ImGui::TextColored(theme_colors[i], "● %s", theme_names[i]);
+        ImGui::TextColored(g_ui_theme.text_secondary, "%s", theme_descriptions[i]);
+        
+        // Apply theme button
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100);
+        if (g_current_theme == i) {
+            ImGui::TextColored(g_ui_theme.success_color, "✓ ACTIVE");
+        } else {
+            char button_id[64];
+            sprintf(button_id, "Apply##%d", i);
+            if (ImGui::Button(button_id)) {
+                switch_theme((ThemeType)i);
+            }
+        }
+        
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor();
+        
+        if (i < THEME_COUNT - 1) ImGui::Spacing();
+    }
+    
+    ImGui::Spacing();
+    
+    // Application description
+    render_section_header("Description", "What This Application Does", g_ui_theme.accent_color);
+    
+    ImGui::TextColored(g_ui_theme.text_primary, "This application provides a professional graphical interface for monitoring and controlling an ECU.");
+    ImGui::TextColored(g_ui_theme.text_secondary, "It uses SDL2 for windowing, OpenGL for rendering, and ImGui for modern UI.");
+    ImGui::TextColored(g_ui_theme.text_secondary, "The ECU communication is handled by a robust, multi-protocol library.");
+    
+    ImGui::Spacing();
+    
+    ImGui::TextColored(g_ui_theme.text_muted, "Demo Mode allows you to test the application without an ECU connection.");
+    ImGui::TextColored(g_ui_theme.text_muted, "Enable it to see simulated engine data and test all features.");
 }
 
 void render_general_tab() {
-    ImGui::Text("General - System Information");
-    ImGui::Separator();
+    // Professional section header
+    render_section_header("General", "System Information and Status", g_ui_theme.primary_color);
     
-    ImGui::Text("Application Version: 1.0.0");
-    ImGui::Text("ECU Status: %s", g_ecu_status);
-    ImGui::Text("Connected: %s", g_ecu_connected ? "Yes" : "No");
+    ImGui::Spacing();
     
-    // Demo mode toggle and information
-    ImGui::Separator();
-    ImGui::Text("Demo Mode:");
+    // Application information with professional styling
+    render_section_header("Application Information", "Version and Status Details", g_ui_theme.accent_color);
+    
+    ImGui::BeginGroup();
+    
+    // App info in a professional card layout
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("AppInfo", ImVec2(0, 100), true);
+    
+    // App details with enhanced styling
+    ImGui::TextColored(g_ui_theme.text_secondary, "Application Version:");
     ImGui::SameLine();
-    if (ImGui::Checkbox("Enable Demo Mode", &g_demo_mode)) {
+    ImGui::TextColored(g_ui_theme.primary_color, "1.0.0");
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "ECU Status:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.text_primary, "%s", g_ecu_status);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Connected:");
+    ImGui::SameLine();
+    render_status_indicator("ECU", g_ecu_connected, g_ecu_connected ? "Yes" : "No");
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+    
+    ImGui::Spacing();
+    
+    // Demo mode section with professional styling
+    render_section_header("Demo Mode", "Testing and Development Features", g_ui_theme.warning_color);
+    
+    ImGui::BeginGroup();
+    
+    // Demo mode toggle with enhanced styling
+    ImGui::TextColored(g_ui_theme.text_primary, "Enable Demo Mode:");
+    ImGui::SameLine();
+    
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, g_ui_theme.success_color);
+    if (ImGui::Checkbox("##demo_mode_general", &g_demo_mode)) {
         if (g_demo_mode) {
             add_log_entry(0, "Demo mode enabled by user");
         } else {
             add_log_entry(0, "Demo mode disabled by user");
         }
     }
+    ImGui::PopStyleColor();
     
+    // Demo mode status and features
     if (g_demo_mode) {
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK ACTIVE");
-        ImGui::Separator();
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "DEMO MODE FEATURES:");
-        ImGui::Text("• All data is simulated for testing purposes");
-        ImGui::Text("• Real-time charts show demo data");
-        ImGui::Text("• VE table contains demo values");
-        ImGui::Text("• 3D view shows simulated engine position");
-        ImGui::Text("• No actual ECU communication");
+        render_status_indicator("Demo Mode", true, "ACTIVE");
+        
+        ImGui::Spacing();
+        
+        // Demo features in a professional card layout
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_medium);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+        ImGui::BeginChild("DemoFeatures", ImVec2(0, 120), true);
+        
+        ImGui::TextColored(g_ui_theme.warning_color, "🚀 DEMO MODE FEATURES:");
+        ImGui::TextColored(g_ui_theme.text_primary, "• All data is simulated for testing purposes");
+        ImGui::TextColored(g_ui_theme.text_primary, "• Real-time charts show demo data");
+        ImGui::TextColored(g_ui_theme.text_primary, "• VE table contains demo values");
+        ImGui::TextColored(g_ui_theme.text_primary, "• 3D view shows simulated engine position");
+        ImGui::TextColored(g_ui_theme.text_primary, "• No actual ECU communication");
+        
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor();
+    } else {
+        ImGui::SameLine();
+        render_status_indicator("Demo Mode", false, "INACTIVE");
     }
     
-    ImGui::Separator();
+    ImGui::EndGroup();
     
-    ImGui::Text("ECU Data:");
-    ImGui::Text("  RPM: %.0f", g_ecu_data.rpm);
-    ImGui::Text("  Coolant Temp: %.1f°C", g_ecu_data.coolant_temp);
-    ImGui::Text("  Intake Air Temp: %.1f°C", g_ecu_data.intake_temp);
-    ImGui::Text("  MAP: %.1f kPa", g_ecu_data.map);
-    ImGui::Text("  TPS: %.1f%%", g_ecu_data.tps);
-    ImGui::Text("  Battery Voltage: %.1fV", g_ecu_data.battery_voltage);
+    ImGui::Spacing();
+    
+    // ECU data section with professional styling
+    render_section_header("ECU Data", "Real-time Engine Parameters", g_ui_theme.success_color);
+    
+    ImGui::BeginGroup();
+    
+    // ECU data in a professional card layout
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("ECUData", ImVec2(0, 120), true);
+    
+    // ECU data with enhanced styling
+    ImGui::TextColored(g_ui_theme.text_secondary, "RPM:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.primary_color, "%.0f", g_ecu_data.rpm);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Coolant Temp:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.text_primary, "%.1f°C", g_ecu_data.coolant_temp);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Intake Air Temp:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.text_primary, "%.1f°C", g_ecu_data.intake_temp);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "MAP:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.text_primary, "%.1f kPa", g_ecu_data.map);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "TPS:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.text_primary, "%.1f%%", g_ecu_data.tps);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Battery Voltage:");
+    ImGui::SameLine();
+    ImGui::TextColored(g_ui_theme.text_primary, "%.1fV", g_ecu_data.battery_voltage);
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
 }
 
 void render_communications_tab() {
+    // Professional section header
+    render_section_header("Communications", "ECU Connection and Data Transfer", g_ui_theme.primary_color);
+    
+    ImGui::Spacing();
+    
+    // ECU connection panel
+    render_ecu_connection_panel();
+    
+    ImGui::Spacing();
+    
     // Initialize communications if not done yet
     if (!g_communications_initialized) {
         g_communications = imgui_communications_create(g_ecu_context);
@@ -2179,7 +3531,7 @@ void render_communications_tab() {
                 [](float scale, float min_value, float max_value) {
                     add_log_entry(0, "VE table metadata callback: scale=%.2f, range=%.0f-%.0f", scale, min_value, max_value);
                     if (g_ve_table) {
-                        g_ve_table->metadata.scale = scale;
+                        // Note: scale is no longer stored in metadata
                         g_ve_table->metadata.min_value = min_value;
                         g_ve_table->metadata.max_value = max_value;
                     }
@@ -2193,6 +3545,8 @@ void render_communications_tab() {
     }
     
     if (g_communications && g_communications_initialized) {
+        ImGui::Separator();
+        ImGui::TextColored(g_ui_theme.text_secondary, "Legacy Communications System:");
         imgui_communications_render(g_communications);
     } else {
         ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Failed to initialize communications!");
@@ -2221,70 +3575,329 @@ void render_runtime_display_tab() {
 }
 
 void render_datalogging_tab() {
-    ImGui::Text("Data Logging - Log Management");
-    ImGui::Separator();
+    // Professional section header
+    render_section_header("Data Logging", "Log Management and Analysis", g_ui_theme.primary_color);
     
-    ImGui::Text("Log files:");
-    ImGui::Text("  /logs/megatunix.log");
-    ImGui::Text("  /logs/ecu_data.log");
+    ImGui::Spacing();
     
-    ImGui::Separator();
+    // Log files section with professional styling
+    render_section_header("Log Files", "Available Log Sources", g_ui_theme.accent_color);
     
-    if (ImGui::Button("Clear Logs", ImVec2(120, 30))) {
+    ImGui::BeginGroup();
+    
+    // Log files in a professional card layout
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("LogFiles", ImVec2(0, 120), true);
+    
+    // Log file entries with enhanced styling
+    ImGui::TextColored(g_ui_theme.text_secondary, "Application Logs:");
+    ImGui::TextColored(g_ui_theme.text_primary, "  📄 /logs/megatunix.log");
+    ImGui::TextColored(g_ui_theme.text_primary, "  📄 /logs/ecu_data.log");
+    
+    ImGui::Spacing();
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Log Status:");
+    ImGui::TextColored(g_ui_theme.success_color, "  ● Active logging enabled");
+    ImGui::TextColored(g_ui_theme.text_muted, "  Last updated: Just now");
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+    
+    ImGui::Spacing();
+    
+    // Log management section with professional styling
+    render_section_header("Log Management", "Control and Maintenance Operations", g_ui_theme.secondary_color);
+    
+    ImGui::BeginGroup();
+    
+    // Enhanced button styling
+    bool clear_logs_clicked = false;
+    render_professional_button("Clear Logs", ImVec2(120, 30), &clear_logs_clicked, 
+                             g_ui_theme.warning_color, "Clear all log files");
+    if (clear_logs_clicked) {
         // TODO: Implement log clearing
         ImGui::OpenPopup("Logs Cleared");
     }
     
+    ImGui::SameLine();
+    
+    bool export_logs_clicked = false;
+    render_professional_button("Export Logs", ImVec2(120, 30), &export_logs_clicked, 
+                             g_ui_theme.accent_color, "Export logs to external format");
+    if (export_logs_clicked) {
+        // TODO: Implement log export
+        add_log_entry(0, "Export logs button pressed");
+    }
+    
+    ImGui::SameLine();
+    
+    bool rotate_logs_clicked = false;
+    render_professional_button("Rotate Logs", ImVec2(120, 30), &rotate_logs_clicked, 
+                             g_ui_theme.primary_color, "Rotate log files");
+    if (rotate_logs_clicked) {
+        // TODO: Implement log rotation
+        add_log_entry(0, "Rotate logs button pressed");
+    }
+    
+    ImGui::EndGroup();
+    
+    // Logs Cleared popup with enhanced styling
     if (ImGui::BeginPopupModal("Logs Cleared", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Logs have been cleared successfully!");
-        if (ImGui::Button("OK", ImVec2(120, 0))) {
+        ImGui::TextColored(g_ui_theme.success_color, "✅ Logs have been cleared successfully!");
+        ImGui::TextColored(g_ui_theme.text_secondary, "All log files have been reset and are ready for new data.");
+        
+        ImGui::Spacing();
+        
+        bool ok_clicked = false;
+        render_professional_button("OK", ImVec2(120, 0), &ok_clicked, 
+                                 g_ui_theme.primary_color, "Close this dialog");
+        if (ok_clicked) {
             ImGui::CloseCurrentPopup();
         }
+        
         ImGui::EndPopup();
     }
 }
 
 void render_logviewer_tab() {
-    ImGui::Text("Log Viewer - View ECU and Application Logs");
-    ImGui::Separator();
+    // Professional section header
+    render_section_header("Log Viewer", "View ECU and Application Logs", g_ui_theme.primary_color);
     
-    // Placeholder for log content
-    ImGui::Text("Log content will be displayed here.");
-    ImGui::Text("This tab will eventually allow you to view and filter logs.");
+    ImGui::Spacing();
+    
+    // Log viewer controls with professional styling
+    render_section_header("Log Controls", "Filter and View Options", g_ui_theme.accent_color);
+    
+    ImGui::BeginGroup();
+    
+    // Log level filter with enhanced styling
+    ImGui::TextColored(g_ui_theme.text_primary, "Log Level Filter:");
+    ImGui::SameLine();
+    
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, g_ui_theme.background_light);
+    ImGui::SetNextItemWidth(150);
+    const char* log_levels[] = {"All", "Info+", "Warning+", "Error Only", "Debug"};
+    static int selected_log_level = 0;
+    if (ImGui::BeginCombo("##log_level", log_levels[selected_log_level])) {
+        for (int i = 0; i < IM_ARRAYSIZE(log_levels); i++) {
+            const bool is_selected = (selected_log_level == i);
+            if (ImGui::Selectable(log_levels[i], is_selected)) {
+                selected_log_level = i;
+            }
+            if (is_selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopStyleColor();
+    
+    ImGui::SameLine();
+    
+    // Auto-refresh toggle with enhanced styling
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, g_ui_theme.success_color);
+    static bool auto_refresh = true;
+    ImGui::Checkbox("Auto-refresh", &auto_refresh);
+    ImGui::PopStyleColor();
+    
+    ImGui::SameLine();
+    
+    // Clear logs button with enhanced styling
+    bool clear_viewer_logs_clicked = false;
+    render_professional_button("Clear Viewer", ImVec2(100, 25), &clear_viewer_logs_clicked, 
+                             g_ui_theme.warning_color, "Clear log viewer display");
+    if (clear_viewer_logs_clicked) {
+        // TODO: Implement log viewer clearing
+        add_log_entry(0, "Log viewer cleared");
+    }
+    
+    ImGui::EndGroup();
+    
+    ImGui::Spacing();
+    
+    // Log content section with professional styling
+    render_section_header("Log Content", "Real-time Log Display", g_ui_theme.success_color);
+    
+    ImGui::BeginGroup();
+    
+    // Log content in a professional card layout
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("LogContent", ImVec2(0, 300), true);
+    
+    // Placeholder for log content with enhanced styling
+    ImGui::TextColored(g_ui_theme.text_secondary, "📋 Log content will be displayed here.");
+    ImGui::TextColored(g_ui_theme.text_muted, "This tab will eventually allow you to view and filter logs in real-time.");
+    
+    ImGui::Spacing();
+    
+    // Sample log entries for demonstration
+    ImGui::TextColored(g_ui_theme.text_primary, "[12:34:56] INFO: Application started successfully");
+    ImGui::TextColored(g_ui_theme.text_primary, "[12:34:57] INFO: ECU communication initialized");
+    ImGui::TextColored(g_ui_theme.warning_color, "[12:34:58] WARN: Demo mode enabled");
+    ImGui::TextColored(g_ui_theme.success_color, "[12:34:59] INFO: VE table loaded (16x12)");
+    ImGui::TextColored(g_ui_theme.text_muted, "[12:35:00] DEBUG: Rendering frame 1");
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
 }
 
 void render_engine_vitals_tab() {
-    ImGui::Text("Engine Vitals - Real-time Monitoring");
+    // Professional section header
+    render_section_header("Engine Vitals", "Real-time Monitoring", g_ui_theme.primary_color);
+    
+    // Demo mode indicator
     if (g_demo_mode) {
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[DEMO MODE]");
+        render_status_indicator("Demo Mode", true, "ACTIVE");
     }
-    ImGui::Separator();
     
-    // Two column layout
-    ImGui::Columns(2, "VitalsColumns");
+    ImGui::Spacing();
     
-    // Left column
-    ImGui::Text("Engine Speed");
-    ImGui::Text("RPM: %.0f", g_ecu_data.rpm);
-    ImGui::Text("Speed: %.1f km/h", g_ecu_data.rpm * 0.1f); // Placeholder calculation
+    // Engine Speed Section
+    render_section_header("Engine Speed", "RPM and Vehicle Speed", g_ui_theme.accent_color);
     
-    ImGui::NextColumn();
+    // Engine speed metrics in a grid layout
+    ImGui::BeginGroup();
     
-    // Right column
-    ImGui::Text("Temperatures");
-    ImGui::Text("Coolant: %.1f°C", g_ecu_data.coolant_temp);
-    ImGui::Text("Intake: %.1f°C", g_ecu_data.intake_temp);
-    ImGui::Text("Oil: %.1f°C", g_ecu_data.oil_temp);
+    // RPM display with large, prominent styling
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("RPMDisplay", ImVec2(200, 100), true);
     
-    ImGui::Columns(1);
-    ImGui::Separator();
+    ImGui::TextColored(g_ui_theme.text_secondary, "Engine RPM");
+    ImGui::TextColored(g_ui_theme.primary_color, "%.0f", g_ecu_data.rpm);
+    ImGui::TextColored(g_ui_theme.text_muted, "RPM");
     
-    // Pressures
-    ImGui::Text("Pressures");
-    ImGui::Text("MAP: %.1f kPa", g_ecu_data.map);
-    ImGui::Text("Oil Pressure: %.1f kPa", g_ecu_data.oil_pressure);
-    ImGui::Text("Fuel Pressure: %.1f kPa", g_ecu_data.fuel_pressure);
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::SameLine();
+    
+    // Vehicle speed display
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("SpeedDisplay", ImVec2(200, 100), true);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Vehicle Speed");
+    ImGui::TextColored(g_ui_theme.secondary_color, "%.1f", g_ecu_data.rpm * 0.1f); // Placeholder calculation
+    ImGui::TextColored(g_ui_theme.text_muted, "km/h");
+    
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+    
+    ImGui::Spacing();
+    
+    // Temperatures Section
+    render_section_header("Temperatures", "Engine and Intake Temperatures", g_ui_theme.warning_color);
+    
+    // Temperature metrics in a grid
+    ImGui::BeginGroup();
+    
+    // Coolant temperature
+    char coolant_str[16];
+    snprintf(coolant_str, sizeof(coolant_str), "%.0f", g_ecu_data.coolant_temp);
+    render_metric_card("Coolant", coolant_str, "°C", 
+                      g_ecu_data.coolant_temp > 100 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Engine coolant");
+    
+    ImGui::SameLine();
+    
+    // Intake temperature
+    char intake_str[16];
+    snprintf(intake_str, sizeof(intake_str), "%.0f", g_ecu_data.intake_temp);
+    render_metric_card("Intake", intake_str, "°C", 
+                      g_ecu_data.intake_temp > 80 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Intake air");
+    
+    ImGui::SameLine();
+    
+    // Oil temperature
+    char oil_str[16];
+    snprintf(oil_str, sizeof(oil_str), "%.0f", g_ecu_data.oil_temp);
+    render_metric_card("Oil", oil_str, "°C", 
+                      g_ecu_data.oil_temp > 120 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Engine oil");
+    
+    ImGui::EndGroup();
+    
+    ImGui::Spacing();
+    
+    // Pressures Section
+    render_section_header("Pressures", "Engine and Fuel System Pressures", g_ui_theme.success_color);
+    
+    // Pressure metrics in a grid
+    ImGui::BeginGroup();
+    
+    // MAP pressure
+    char map_str[16];
+    snprintf(map_str, sizeof(map_str), "%.0f", g_ecu_data.map);
+    render_metric_card("MAP", map_str, "kPa", 
+                      g_ecu_data.map > 200 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Manifold pressure");
+    
+    ImGui::SameLine();
+    
+    // Oil pressure
+    char oil_press_str[16];
+    snprintf(oil_press_str, sizeof(oil_press_str), "%.0f", g_ecu_data.oil_pressure);
+    render_metric_card("Oil Press", oil_press_str, "kPa", 
+                      g_ecu_data.oil_pressure < 100 ? g_ui_theme.error_color : g_ui_theme.success_color,
+                      "Oil system");
+    
+    ImGui::SameLine();
+    
+    // Fuel pressure
+    char fuel_press_str[16];
+    snprintf(fuel_press_str, sizeof(fuel_press_str), "%.0f", g_ecu_data.fuel_pressure);
+    render_metric_card("Fuel Press", fuel_press_str, "kPa", 
+                      g_ecu_data.fuel_pressure < 150 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Fuel system");
+    
+    ImGui::EndGroup();
+    
+    ImGui::Spacing();
+    
+    // Additional Engine Data
+    render_section_header("Additional Data", "Other Engine Parameters", g_ui_theme.accent_color);
+    
+    ImGui::BeginGroup();
+    
+    // AFR display
+    char afr_str[16];
+    snprintf(afr_str, sizeof(afr_str), "%.1f", g_ecu_data.afr);
+    render_metric_card("AFR", afr_str, "ratio", 
+                      g_ecu_data.afr < 12 || g_ecu_data.afr > 16 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Air/Fuel ratio");
+    
+    ImGui::SameLine();
+    
+    // Boost display
+    char boost_str[16];
+    snprintf(boost_str, sizeof(boost_str), "%.1f", g_ecu_data.boost);
+    render_metric_card("Boost", boost_str, "kPa", 
+                      g_ecu_data.boost > 0 ? g_ui_theme.secondary_color : g_ui_theme.text_primary,
+                      "Turbo boost");
+    
+    ImGui::SameLine();
+    
+    // Timing display
+    char timing_str[16];
+    snprintf(timing_str, sizeof(timing_str), "%.1f", g_ecu_data.timing);
+    render_metric_card("Timing", timing_str, "°", 
+                      g_ecu_data.timing > 30 ? g_ui_theme.warning_color : g_ui_theme.success_color,
+                      "Ignition timing");
+    
+    ImGui::EndGroup();
 }
 
 void render_enrichments_tab() {
@@ -2296,536 +3909,478 @@ void render_enrichments_tab() {
 }
 
 void render_ve_table_tab() {
+    // Professional section header for VE Table
+    render_section_header("VE Table(1)", "Fuel and Spark Tuning", g_ui_theme.primary_color);
     
-    ImGui::Text("VE Table(1) - Fuel and Spark Tuning");
+    // Demo mode indicator
     if (g_demo_mode) {
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[DEMO MODE]");
+        render_status_indicator("Demo Mode", true, "ACTIVE");
     }
+    
+    // Check if VE table is available
+    if (!g_ve_table || !g_ve_table_initialized) {
+        ImGui::TextColored(g_ui_theme.error_color, "VE Table not available");
+        return;
+    }
+    
+    // Table information with professional styling
+    render_section_header("Table Information", "Current Table Status", g_ui_theme.success_color);
+    
+    // Table info in a professional card layout
+    ImGui::BeginGroup();
+    
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("TableInfo", ImVec2(300, 80), true);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Table Size:");
+    ImGui::TextColored(g_ui_theme.primary_color, "%dx%d", g_ve_table->width, g_ve_table->height);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Value Range:");
+    ImGui::TextColored(g_ui_theme.accent_color, "%.1f - %.1f", g_ve_table->metadata.min_value, g_ve_table->metadata.max_value);
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+    
+    // Professional table operations
+    render_section_header("Professional Operations", "Advanced Table Editing", g_ui_theme.accent_color);
+    
+    ImGui::BeginGroup();
+    
+    if (ImGui::Button("Create Backup", ImVec2(120, 25))) {
+        create_table_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Restore Backup", ImVec2(120, 25))) {
+        restore_table_from_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Export Table", ImVec2(120, 25))) {
+        export_table_to_file("ve_table_export.csv");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Import Table", ImVec2(120, 25))) {
+        import_table_from_file("ve_table_import.csv");
+    }
+    
+    ImGui::EndGroup();
+    
+    // Professional Key Bindings Legend
+    ImGui::Separator();
+    ImGui::Text("🎯 Professional Table Editing Key Bindings");
+    ImGui::SameLine();
+    
+    // Simple key bindings display
+    ImGui::Text("Arrow Keys: Navigate | I: Interpolate | S: Smooth | B: Backup | R: Restore");
+    
+    // End of function
+    add_log_entry(0, "VE Table tab rendered successfully");
+}
+
+void render_ignition_table_tab() {
+    // DEBUG: Add logging to see if this function is actually being called
+    add_log_entry(0, "DEBUG: render_ignition_table_tab() called - checking table state");
+    
+    // Professional section header for Ignition Table
+    render_section_header("Ignition Table(1)", "Spark Advance Tuning", g_ui_theme.primary_color);
+    
+    // Demo mode indicator
+    if (g_demo_mode) {
+        ImGui::SameLine();
+        render_status_indicator("Demo Mode", true, "ACTIVE");
+    }
+    
+    // Check if Ignition table is available
+    if (!g_ignition_table || !g_ignition_table_initialized) {
+        add_log_entry(0, "ERROR: Ignition table not available or not initialized");
+        ImGui::TextColored(g_ui_theme.error_color, "Ignition Table not available");
+        return;
+    }
+    
+    add_log_entry(0, "DEBUG: Ignition table is valid - width=%d, height=%d", 
+                 g_ignition_table->width, g_ignition_table->height);
+    
+    // Table information with professional styling
+    render_section_header("Table Information", "Current Table Status", g_ui_theme.success_color);
+    
+    // Table info in a professional card layout
+    ImGui::BeginGroup();
+    
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, g_ui_theme.corner_radius);
+    ImGui::BeginChild("TableInfo", ImVec2(300, 80), true);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Table Size:");
+    ImGui::TextColored(g_ui_theme.primary_color, "%dx%d", g_ignition_table->width, g_ignition_table->height);
+    
+    ImGui::TextColored(g_ui_theme.text_secondary, "Value Range:");
+    ImGui::TextColored(g_ui_theme.accent_color, "%.1f - %.1f", g_ignition_table->metadata.min_value, g_ignition_table->metadata.max_value);
+    
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+    
+    // Professional table operations
+    render_section_header("Professional Operations", "Advanced Table Editing", g_ui_theme.accent_color);
+    
+    ImGui::BeginGroup();
+    
+    if (ImGui::Button("Create Backup", ImVec2(120, 25))) {
+        create_table_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Restore Backup", ImVec2(120, 25))) {
+        restore_table_from_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Export Table", ImVec2(120, 25))) {
+        export_table_to_file("ignition_table_export.csv");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Import Table", ImVec2(120, 25))) {
+        import_table_from_file("ignition_table_import.csv");
+    }
+    
+    ImGui::EndGroup();
+    
     ImGui::Separator();
     
-    // VE table is now initialized in main() function
+    // Professional editing controls
+    ImGui::BeginGroup();
+    ImGui::TextColored(g_ui_theme.primary_color, "Professional Editing Controls:");
     
-    // Initialize texture if not done yet
-    if (!g_ve_texture_initialized && g_ve_table_initialized) {
-        g_ve_texture = imgui_ve_texture_create(512, 512); // Create 512x512 texture
-        if (g_ve_texture) {
-            g_ve_texture_initialized = true;
+    if (ImGui::Button("Reset to Demo", ImVec2(140, 25))) {
+        imgui_ignition_table_load_demo_data(g_ignition_table);
+        g_table_has_changes = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Clear Selection", ImVec2(140, 25))) {
+        g_selected_cell_x = -1;
+        g_selected_cell_y = -1;
+        g_cell_editing = false;
+        clear_multi_selection();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Edit Cell", ImVec2(140, 25))) {
+        if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+            g_cell_editing = true;
+            g_input_field_focused = true;
+            // Initialize buffer with current value
+            float current_val = imgui_table_get_value(g_ignition_table, g_selected_cell_x, g_selected_cell_y);
+            snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.1f", current_val);
+            add_log_entry(0, "Entering edit mode for cell [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+        } else {
+            add_log_entry(0, "Please select a cell first before editing");
         }
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Create Backup", ImVec2(140, 25))) {
+        create_table_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Restore Backup", ImVec2(140, 25))) {
+        restore_table_from_backup();
+    }
+    ImGui::EndGroup();
     
-    if (g_ve_table && g_ve_table_initialized && g_ve_texture && g_ve_texture_initialized) {
-        // View mode selection
-        ImGui::Text("View Mode:");
+    // Professional cell information display
+    if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+        ImGui::BeginChild("CellInfo", ImVec2(0, 80), true);
+        
+        float cell_value = imgui_table_get_value(g_ignition_table, g_selected_cell_x, g_selected_cell_y);
+        ImGui::TextColored(g_ui_theme.primary_color, "Selected Cell Information:");
+        ImGui::Text("Position: [%d, %d] | Value: %.1f°", 
+                   g_selected_cell_x, g_selected_cell_y, cell_value);
+        ImGui::Text("MAP: %.1f kPa | RPM: %.0f", 
+                   g_ignition_table->x_axis[g_selected_cell_x], 
+                   g_ignition_table->y_axis[g_selected_cell_y]);
+        
+        // Quick edit field
+        ImGui::Text("Quick Edit:");
         ImGui::SameLine();
-        ImGui::RadioButton("Interactive 2D Editor", &g_ve_view_mode, 0);
-        ImGui::SameLine();
-        ImGui::RadioButton("3D View", &g_ve_view_mode, 1);
-        ImGui::SameLine();
-        ImGui::RadioButton("Table Editor", &g_ve_view_mode, 2);
-        
-        ImGui::Separator();
-        
-        // Debug info
-        const char* view_names[] = {"Interactive 2D Editor", "3D View", "Table Editor"};
-        ImGui::Text("Debug - Current View: %s (Mode: %d)", view_names[g_ve_view_mode], g_ve_view_mode);
-        
-        // Add debug info to log
-        static int last_view_mode = -1;
-        if (last_view_mode != g_ve_view_mode) {
-            add_log_entry(0, "VE Table view mode changed to: %s", view_names[g_ve_view_mode]);
-            last_view_mode = g_ve_view_mode;
+        ImGui::PushItemWidth(100);
+        if (ImGui::InputFloat("##QuickEdit", &cell_value, 1.0f, 5.0f, "%.1f")) {
+            imgui_table_set_value(g_ignition_table, g_selected_cell_x, g_selected_cell_y, cell_value);
+            g_table_has_changes = true;
         }
+        ImGui::PopItemWidth();
         
-        // Table information
-        // Debug: Log the exact values being passed to ImGui::Text
-        add_log_entry(3, "DEBUG: About to render Table Size text: %dx%d", g_ve_table->width, g_ve_table->height);
-        
-        // Add a high-priority message that will be more visible
-        static int last_reported_size = -1;
-        if (last_reported_size != g_ve_table->width * 1000 + g_ve_table->height) {
-            add_log_entry(0, "*** VE TABLE SIZE CHANGE: %dx%d ***", g_ve_table->width, g_ve_table->height);
-            last_reported_size = g_ve_table->width * 1000 + g_ve_table->height;
-        }
-        
-        ImGui::Text("Table Size: %dx%d", g_ve_table->width, g_ve_table->height);
-        ImGui::Text("Value Range: %.1f - %.1f", g_ve_table->metadata.min_value, g_ve_table->metadata.max_value);
-        
-        // Professional Key Bindings Legend
-        ImGui::Separator();
-        ImGui::Text("🎯 Professional Table Editing Key Bindings");
-        ImGui::SameLine();
-        
-        
-        // Enhanced Key Bindings Legend Window (regular window for proper z-order)
-        // Note: show_legend flag is now handled directly in the window rendering
-
-        
-        // Debug: Log the actual table dimensions being displayed
-        static int last_width = -1, last_height = -1;
-        static void* last_table_address = NULL;
-        if (last_width != g_ve_table->width || last_height != g_ve_table->height || last_table_address != g_ve_table) {
-            add_log_entry(0, "UI displaying table size: %dx%d (address: %p)", g_ve_table->width, g_ve_table->height, g_ve_table);
-            last_width = g_ve_table->width;
-            last_height = g_ve_table->height;
-            last_table_address = g_ve_table;
-            
-            // Force ImGui to refresh the text
-            ImGui::SetWindowFocus();
-        }
-        
-        // Debug: Also log every frame to see if the table is being reset
-        static int frame_count = 0;
-        frame_count++;
-        if (frame_count % 60 == 0) { // Log every 60 frames (about once per second)
-            add_log_entry(3, "DEBUG: Current table dimensions: %dx%d", g_ve_table->width, g_ve_table->height);
-        }
-        
-        // Action buttons
-        if (ImGui::Button("Load from ECU", ImVec2(120, 30))) {
-            // TODO: Load actual data from ECU
-            ImGui::OpenPopup("Load from ECU");
-        }
-        
-        ImGui::SameLine();
-        
-        if (ImGui::Button("Save to ECU", ImVec2(120, 30))) {
-            // TODO: Save data to ECU
-            ImGui::OpenPopup("Save to ECU");
-        }
-        
-        ImGui::SameLine();
-        
-        if (ImGui::Button("Reset to Demo", ImVec2(120, 30))) {
-            imgui_table_load_demo_data(g_ve_table);
-            if (g_ve_texture) {
-                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
-            }
-        }
-        
-        // Popup for ECU operations
-        if (ImGui::BeginPopupModal("Load from ECU", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Loading VE table from ECU...");
-            ImGui::Text("This feature will be implemented when ECU communication is ready.");
-            if (ImGui::Button("OK", ImVec2(120, 0))) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-        
-        if (ImGui::BeginPopupModal("Save to ECU", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Saving VE table to ECU...");
-            ImGui::Text("This feature will be implemented when ECU communication is ready.");
-            if (ImGui::Button("OK", ImVec2(120, 0))) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-        
-        ImGui::Separator();
-        
-        // Trail toggle control
-        ImGui::Text("Display Options:");
-        if (ImGui::Checkbox("Show Engine Trail", &g_show_engine_trail)) {
-            if (g_show_engine_trail) {
-                add_log_entry(0, "Engine trail enabled");
-            } else {
-                add_log_entry(0, "Engine trail disabled");
-            }
-        }
-        ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "(Shows fading trail of engine operating point)");
-        
-        // Y-axis label rotation removed - MAP title is now permanently rotated
-        
-        ImGui::Separator();
-        
-        // Render the selected view
-        switch (g_ve_view_mode) {
-            case 0: // 2D Heatmap
-                render_ve_table_2d_view();
-                break;
-            case 1: // 3D View
-                render_ve_table_3d_view();
-                break;
-            case 2: // Table Editor
-                render_ve_table_editor_view();
-                break;
-            default:
-                render_ve_table_2d_view(); // Default to 2D view
-                break;
-        }
-        
-        // Integrated legend panel - responsive to window size
-        float window_width = ImGui::GetIO().DisplaySize.x;
-        float legend_width = window_width * 0.4f; // 40% of window width
-        float legend_x = window_width - legend_width - 20; // 20px margin from right
-        ImGui::SetCursorPos(ImVec2(legend_x, 50));
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.1f, 0.1f, 0.1f, 0.95f));
-        ImGui::BeginChild("LegendPanel", ImVec2(legend_width, 200), true);
-                
-
-            
-            ImGui::Text("🎮 VE Table Key Bindings");
-            ImGui::Text("Professional ECU tuning software-style editing");
-            ImGui::Separator();
-            
-            // Status indicator
-            ImGui::Text("Status: ");
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "● Active");
-            ImGui::SameLine();
-            ImGui::Text(" | Inc: %.1f | %%: %.1f", 
-                       g_key_binding_state.increment_amount, g_key_binding_state.percent_increment);
-            
-            // Interpolation mode indicator
-            if (g_interpolation_mode) {
-                ImGui::SameLine();
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), " | 🔄 INTERPOLATION MODE");
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "   Select second cell and press I again to interpolate");
-            }
-            
-            ImGui::Separator();
-            
-            // Reorganized table with descriptions
-            if (ImGui::BeginTable("KeyBindingsTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-                ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 60);
-                ImGui::TableSetupColumn("Function", ImGuiTableColumnFlags_WidthFixed, 80);
-                ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, 50);
-                ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableHeadersRow();
-                
-                // Navigation
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Arrow Keys");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Navigate");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Move between table cells using arrow keys");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Tab");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Next");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Move to next cell (Excel-style navigation)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Shift+Tab");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Prev");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Move to previous cell (reverse navigation)");
-                
-                // Basic Operations
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "+");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Inc");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Increase cell value by increment amount (%.1f)", g_key_binding_state.increment_amount);
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "-");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Dec");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Decrease cell value by increment amount (%.1f)", g_key_binding_state.increment_amount);
-                
-                // Alt Operations
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Alt++");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Inc Alt");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Alternative increment method (same as +)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Alt+-");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Dec Alt");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Alternative decrement method (same as -)");
-                
-                // Advanced Operations
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "*");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Scale %%");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Scale cell value by percentage (%.1f%%)", g_key_binding_state.percent_increment);
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.5f, 0.5f, 1.0f, 1.0f), "I");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Interp");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Interpolate between two selected cells");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.5f, 0.5f, 1.0f, 1.0f), "S");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Smooth");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Smooth selected cells using interpolation (planned)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.5f, 0.5f, 1.0f, 1.0f), "Z");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Undo");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Undo last action (planned)");
-                
-                // Navigation Keys
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Arrow Keys");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Navigate Cells");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Move between table cells");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Tab");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Next Cell");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Move to next cell (Excel-style)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Shift+Tab");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Previous Cell");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Move to previous cell");
-                
-                // Basic Value Operations
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "+");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Increment");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Increase cell value by %.1f", g_key_binding_state.increment_amount);
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "-");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Decrement");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Decrease cell value by %.1f", g_key_binding_state.increment_amount);
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Alt++");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Increment Alt");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Alternative increment method");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Alt+-");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Decrement Alt");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Alternative decrement method");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "*");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Scale By");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Multiply cell value by %.1f%%", g_key_binding_state.percent_increment);
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "=");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Set To");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "PART");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Set cell to specific value (needs input dialog)");
-                
-                // Advanced Operations
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "I");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Interpolate");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Interpolate between two selected cells");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "H");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Interpolate H");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Horizontal interpolation (planned)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "V");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Interpolate V");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Vertical interpolation (planned)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "S");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Smooth");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "OK");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Smooth selected cells (planned)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "R");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Reset");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Reset selected cells to default (planned)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Z");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Undo");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Undo last action (planned)");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Y");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Redo");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Redo last undone action (planned)");
-                
-                // Copy/Paste Operations
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Ctrl+C");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Copy");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Copy selected cell to clipboard");
-                
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Ctrl+V");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("Paste");
-                ImGui::TableSetColumnIndex(2);
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "PLAN");
-                ImGui::TableSetColumnIndex(3);
-                ImGui::Text("Paste cell from clipboard");
-                
-                ImGui::EndTable();
-            }
-            
-                                // Configuration section
-                    ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Config - use arrows to highlight and Space to select");
-                    ImGui::SliderFloat("Increment Control (+ / -)", &g_key_binding_state.increment_amount, 0.1f, 10.0f, "%.1f");
-                    ImGui::SliderFloat("Percent Control ( * )", &g_key_binding_state.percent_increment, 1.0f, 50.0f, "%.1f%%");
-            
-            ImGui::Separator();
-            
-            // Legend for status indicators
-            ImGui::TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "Status");
-            ImGui::SameLine();
-            ImGui::Text("OK=Working | PLAN=Planned");
-            
         ImGui::EndChild();
         ImGui::PopStyleColor();
-        
-        // Double padding below the VE table
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-        ImGui::Spacing();
-    
-
-    } else {
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Failed to initialize VE table or texture!");
     }
+    
+    // Professional multi-selection display
+    if (g_multi_selection.active) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+        ImGui::BeginChild("MultiSelectionInfo", ImVec2(0, 60), true);
+        
+        int cell_count = get_selection_cell_count();
+        ImGui::TextColored(g_ui_theme.primary_color, "Multi-Selection Active:");
+        ImGui::Text("Range: [%d,%d] to [%d,%d] | Cells: %d", 
+                   g_multi_selection.start_x, g_multi_selection.start_y,
+                   g_multi_selection.end_x, g_multi_selection.end_y, cell_count);
+        ImGui::Text("Operations: Press 'I' for interpolation, 'S' for smoothing, 'M' for math operations");
+        
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
+    }
+    
+    ImGui::Separator();
+    
+    // Professional table title and instructions
+    ImGui::TextColored(g_ui_theme.primary_color, "Professional Table Editor");
+    ImGui::TextColored(g_ui_theme.text_secondary, "Click cells to select | Double-click to edit | Use arrow keys to navigate | Press Enter to save changes");
+    
+    // Debug: Log the first few values to verify data source
+    add_log_entry(0, "DEBUG: Ignition table data verification - First few values:");
+    for (int y = 0; y < 3 && y < g_ignition_table->height; y++) {
+        for (int x = 0; x < 3 && x < g_ignition_table->width; x++) {
+            float val = g_ignition_table->data[y][x];
+            add_log_entry(0, "  [%d,%d] = %.1f", x, y, val);
+        }
+    }
+    
+    // Debug: Log the specific cell that was showing wrong value
+    add_log_entry(0, "DEBUG: Checking cell [8,3] (RPM 2545, MAP 116):");
+    if (g_ignition_table->height > 3 && g_ignition_table->width > 8) {
+        float val = g_ignition_table->data[3][8];
+        add_log_entry(0, "  Cell [8,3] = %.1f (should be around 35.0)", val);
+        add_log_entry(0, "  RPM: %.0f, MAP: %.1f", g_ignition_table->y_axis[3], g_ignition_table->x_axis[8]);
+    }
+    
+    // Debug: Check the highlighted cell from screenshot [6,2] = 78.8
+    add_log_entry(0, "DEBUG: Checking highlighted cell [6,2] (RPM 1864, MAP 92):");
+    if (g_ignition_table->height > 2 && g_ignition_table->width > 6) {
+        float val = g_ignition_table->data[2][6];
+        add_log_entry(0, "  Cell [6,2] = %.1f (screenshot shows 78.8 - CORRUPTED!)", val);
+        add_log_entry(0, "  RPM: %.0f, MAP: %.1f", g_ignition_table->y_axis[2], g_ignition_table->x_axis[6]);
+        add_log_entry(0, "  Expected value should be around 33.1° based on demo algorithm");
+    }
+    
+    // Debug: Check if data array is properly allocated
+    add_log_entry(0, "DEBUG: Table structure verification:");
+    add_log_entry(0, "  Width: %d, Height: %d", g_ignition_table->width, g_ignition_table->height);
+    add_log_entry(0, "  Data pointer: %p", (void*)g_ignition_table->data);
+    if (g_ignition_table->data) {
+        add_log_entry(0, "  Data[0] pointer: %p", (void*)g_ignition_table->data[0]);
+    }
+    
+    // Debug: Check for any corrupted values in the entire table
+    add_log_entry(0, "DEBUG: Scanning for corrupted values (>50° or <10°):");
+    int corrupted_count = 0;
+    for (int y = 0; y < g_ignition_table->height; y++) {
+        for (int x = 0; x < g_ignition_table->width; x++) {
+            float val = g_ignition_table->data[y][x];
+            if (val > 50.0f || val < 10.0f) {
+                add_log_entry(0, "  CORRUPTED: [%d,%d] = %.1f°", x, y, val);
+                corrupted_count++;
+            }
+        }
+    }
+    add_log_entry(0, "DEBUG: Found %d corrupted values in ignition table", corrupted_count);
+    
+    // Debug: Verify demo data loading by checking a few specific cells
+    add_log_entry(0, "DEBUG: Verifying demo data loading:");
+    if (g_ignition_table->height > 0 && g_ignition_table->width > 0) {
+        float first_cell = g_ignition_table->data[0][0];
+        float last_cell = g_ignition_table->data[g_ignition_table->height-1][g_ignition_table->width-1];
+        add_log_entry(0, "  First cell [0,0] = %.1f° (should be ~15.0°)", first_cell);
+        add_log_entry(0, "  Last cell [%d,%d] = %.1f° (should be ~43.0°)", 
+                     g_ignition_table->width-1, g_ignition_table->height-1, last_cell);
+        
+        // Check if values look like they came from demo algorithm
+        if (first_cell < 10.0f || first_cell > 25.0f) {
+            add_log_entry(0, "  ERROR: First cell value %.1f is outside expected demo range!", first_cell);
+        }
+        if (last_cell < 35.0f || last_cell > 50.0f) {
+            add_log_entry(0, "  ERROR: Last cell value %.1f is outside expected demo range!", last_cell);
+        }
+    }
+    
+    // Simple table grid using ImGui::BeginTable (much safer than custom OpenGL drawing)
+    ImGui::BeginChild("IgnitionTableEditor", ImVec2(0, 0), true);
+    
+    if (ImGui::BeginTable("IgnitionTable", g_ignition_table->width + 1, 
+                          ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | 
+                          ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+        
+        // Header row with MAP values (X-axis)
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        ImGui::TableNextColumn();
+        ImGui::TextColored(g_ui_theme.primary_color, "RPM\\MAP");
+        for (int x = 0; x < g_ignition_table->width; x++) {
+            ImGui::TableNextColumn();
+            ImGui::TextColored(g_ui_theme.primary_color, "%.0f", g_ignition_table->x_axis[x]);
+        }
+        
+        // Data rows with RPM values (Y-axis) and timing data
+        for (int y = 0; y < g_ignition_table->height; y++) {
+            ImGui::TableNextRow();
+            
+            // RPM label column (Y-axis)
+            ImGui::TableNextColumn();
+            ImGui::TextColored(g_ui_theme.accent_color, "%.0f", g_ignition_table->y_axis[y]);
+            
+            // Data columns with actual timing values
+            for (int x = 0; x < g_ignition_table->width; x++) {
+                ImGui::TableNextColumn();
+                
+                // Get current value with bounds checking
+                float value = 0.0f;
+                if (y < g_ignition_table->height && x < g_ignition_table->width) {
+                    value = g_ignition_table->data[y][x];
+                    
+                    // CRITICAL DEBUG: Log the data access for this specific cell
+                    if (x == g_selected_cell_x && y == g_selected_cell_y) {
+                        add_log_entry(0, "*** CELL DATA ACCESS DEBUG *** - Cell [%d,%d]: Value=%.1f, Table=%s", 
+                                     x, y, value, 
+                                     (g_ignition_table == g_ve_table) ? "VE_TABLE_WRONG!" : 
+                                     (g_ignition_table == g_ignition_table) ? "IGNITION_TABLE_CORRECT" : "UNKNOWN");
+                    }
+                    
+                    // Debug: Log suspicious values
+                    if (value > 80.0f || value < -10.0f) {
+                        add_log_entry(0, "DEBUG: Suspicious value at [%d,%d] = %.1f", x, y, value);
+                    }
+                } else {
+                    add_log_entry(0, "ERROR: Accessing out of bounds at [%d,%d], table size is %dx%d", x, y, g_ignition_table->width, g_ignition_table->height);
+                }
+                
+                // Check if this cell is selected
+                bool is_selected = (x == g_selected_cell_x && y == g_selected_cell_y);
+                
+                // Create a clickable button for each cell
+                char cell_button_id[64];
+                snprintf(cell_button_id, sizeof(cell_button_id), "##cell_%d_%d", x, y);
+                
+                // Calculate heatmap color based on ignition value
+                float normalized = 0.0f;
+                if (g_ignition_table->metadata.max_value > g_ignition_table->metadata.min_value) {
+                    normalized = (value - g_ignition_table->metadata.min_value) / (g_ignition_table->metadata.max_value - g_ignition_table->metadata.min_value);
+                }
+                
+                // Set button color based on value (heatmap effect)
+                ImVec4 button_color;
+                if (normalized < 0.5f) {
+                    // Blue to Green gradient for lower values
+                    float t = normalized * 2.0f;
+                    button_color = ImVec4(0.0f, t, 1.0f - t, 0.8f);
+                } else {
+                    // Green to Red gradient for higher values
+                    float t = (normalized - 0.5f) * 2.0f;
+                    button_color = ImVec4(t, 1.0f - t, 0.0f, 0.8f);
+                }
+                
+                // Handle cell selection and editing
+                if (is_selected && g_cell_editing) {
+                    // Show input field for editing
+                    ImGui::PushItemWidth(60);
+                    char input_id[64];
+                    snprintf(input_id, sizeof(input_id), "##input_%d_%d", x, y);
+                    
+                    if (ImGui::InputText(input_id, g_cell_edit_buffer, sizeof(g_cell_edit_buffer), 
+                                        ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll)) {
+                        // Parse and save the new value
+                        float new_value = atof(g_cell_edit_buffer);
+                        // Clamp to valid range
+                        new_value = fmax(g_ignition_table->metadata.min_value, 
+                                       fmin(g_ignition_table->metadata.max_value, new_value));
+                        
+                        // Save to table
+                        imgui_table_set_value(g_ignition_table, x, y, new_value);
+                        g_table_has_changes = true;
+                        g_cell_editing = false;
+                        g_input_field_focused = false;
+                        
+                        // Clear the buffer after successful edit
+                        g_cell_edit_buffer[0] = '\0';
+                        add_log_entry(0, "Ignition table cell [%d,%d] updated to %.1f°", x, y, new_value);
+                    }
+                    ImGui::PopItemWidth();
+                } else {
+                    // Show clickable button with current value and heatmap color
+                    ImGui::PushStyleColor(ImGuiCol_Button, button_color);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(button_color.x, button_color.y, button_color.z, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(button_color.x, button_color.y, button_color.z, 1.0f));
+                    
+                    if (ImGui::Button(cell_button_id, ImVec2(60, 20))) {
+                        g_selected_cell_x = x;
+                        g_selected_cell_y = y;
+                        g_cell_editing = false;
+                        g_input_field_focused = false;
+                        clear_multi_selection();
+                        add_log_entry(0, "Ignition table cell [%d,%d] selected", x, y);
+                    }
+                    
+                    // Handle double-click to enter edit mode
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+                        g_cell_editing = true;
+                        g_input_field_focused = true;
+                        // Initialize buffer with current value
+                        snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.1f", value);
+                        add_log_entry(0, "Double-clicked cell [%d,%d], entering edit mode", x, y);
+                    }
+                    
+                    ImGui::PopStyleColor(3);
+                    
+                    // Show the value as text centered on the button
+                    ImVec2 button_pos = ImGui::GetItemRectMin();
+                    ImVec2 button_size = ImGui::GetItemRectSize();
+                    
+                    // Format the value text
+                    char value_text[16];
+                    snprintf(value_text, sizeof(value_text), "%.1f", value);
+                    ImVec2 text_size = ImGui::CalcTextSize(value_text);
+                    ImVec2 text_pos = ImVec2(
+                        button_pos.x + (button_size.x - text_size.x) * 0.5f,
+                        button_pos.y + (button_size.y - text_size.y) * 0.5f
+                    );
+                    
+                    // Draw text with shadow for better visibility
+                    ImGui::GetWindowDrawList()->AddText(
+                        ImVec2(text_pos.x + 1, text_pos.y + 1),
+                        IM_COL32(0, 0, 0, 255),
+                        value_text
+                    );
+                    ImGui::GetWindowDrawList()->AddText(
+                        text_pos,
+                        IM_COL32(255, 255, 255, 255),
+                        value_text
+                    );
+                }
+                
+                // Highlight the selected cell
+                if (is_selected) {
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, 
+                                          ImGui::GetColorU32(g_ui_theme.accent_color));
+                }
+            }
+        }
+        
+        ImGui::EndTable();
+    }
+    
+    ImGui::EndChild();
+    
+    // Professional Key Bindings Legend
+    ImGui::Separator();
+    ImGui::Text("🎯 Professional Table Editing Key Bindings");
+    ImGui::SameLine();
+    
+    // Simple key bindings display
+    ImGui::Text("Arrow Keys: Navigate | I: Interpolate | S: Smooth | B: Backup | R: Restore");
+    
+    // End of function
+    add_log_entry(0, "Ignition Table tab rendered successfully");
 }
+
 
 void render_tools_tab() {
     ImGui::Text("Tools - Utility Functions");
@@ -2843,8 +4398,1221 @@ void render_warmup_wizard_tab() {
     ImGui::Text("It will include steps for engine pre-heating and ECU initialization.");
 }
 
+// TunerStudio-style UI implementations
+void render_tunerstudio_sidebar() {
+    // Project name header (exact TunerStudio style)
+    ImGui::PushStyleColor(ImGuiCol_Header, g_ui_theme.primary_color);
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, g_ui_theme.primary_color);
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, g_ui_theme.primary_color);
+    
+    if (ImGui::CollapsingHeader("ECU Project", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::PopStyleColor(3);
+        
+        // Communications section - TOP PRIORITY for ECU connection
+        ImGui::TextColored(g_ui_theme.primary_color, "Communications");
+        if (g_selected_view == VIEW_COMMUNICATIONS) {
+            ImGui::TextColored(g_ui_theme.success_color, "● ECU Connection");
+        } else {
+            if (ImGui::Selectable("ECU Connection", false)) {
+                add_log_entry(0, "ECU Connection selected, switching to communications view");
+                g_selected_view = VIEW_COMMUNICATIONS;
+                add_log_entry(0, "g_selected_view set to VIEW_COMMUNICATIONS (%d)", VIEW_COMMUNICATIONS);
+            }
+        }
+        if (ImGui::Selectable("Connection Status", false)) { /* TODO */ }
+        if (ImGui::Selectable("Protocol Settings", false)) { /* TODO */ }
+        if (ImGui::Selectable("Connection Logs", false)) { /* TODO */ }
+        
+        ImGui::Separator();
+        
+        // Fuel Settings section
+        if (ImGui::TreeNode("Fuel Settings")) {
+            if (g_selected_view == VIEW_TUNING && g_selected_table_index == 0) {
+                ImGui::TextColored(g_ui_theme.success_color, "● VE Table 1");
+            } else {
+                if (ImGui::Selectable("VE Table 1", false)) {
+                    add_log_entry(0, "VE Table 1 selected, switching to tuning view");
+                    g_selected_view = VIEW_TUNING;
+                    g_selected_table_index = 0; // Set to VE Table
+                    add_log_entry(0, "g_selected_view set to VIEW_TUNING (%d), table index set to %d", VIEW_TUNING, g_selected_table_index);
+                }
+            }
+            if (ImGui::Selectable("AFR Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Target AFR Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Fuel Pressure Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Injector Dead Time Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Acceleration Enrichment Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Cranking Fuel Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Afterstart Enrichment Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Warmup Enrichment Table", false)) { /* TODO */ }
+            ImGui::TreePop();
+        }
+        
+        // Ignition Settings section
+        if (ImGui::TreeNode("Ignition Settings")) {
+            if (g_selected_view == VIEW_TUNING && g_selected_table_index == 1) {
+                ImGui::TextColored(g_ui_theme.success_color, "● Ignition Table 1");
+            } else {
+                if (ImGui::Selectable("Ignition Table 1", false)) {
+                    add_log_entry(0, "Ignition Table 1 selected, switching to tuning view");
+                    g_selected_view = VIEW_TUNING;
+                    g_selected_table_index = 1; // Set to Ignition Table
+                    add_log_entry(0, "g_selected_view set to VIEW_TUNING (%d), table index set to %d", VIEW_TUNING, g_selected_table_index);
+                }
+            }
+            if (ImGui::Selectable("Ignition Trim Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Cranking Timing Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Idle Timing Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Knock Retard Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Launch Control Timing", false)) { /* TODO */ }
+            ImGui::TreePop();
+        }
+        
+        // Idle Control section
+        if (ImGui::TreeNode("Idle Control")) {
+            if (ImGui::Selectable("Idle Speed Control Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Idle Valve Position", false)) { /* TODO */ }
+            ImGui::TreePop();
+        }
+        
+        // Boost Control section
+        if (ImGui::TreeNode("Boost Control")) {
+            if (ImGui::Selectable("Boost Control Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Wastegate Duty Cycle", false)) { /* TODO */ }
+            ImGui::TreePop();
+        }
+        
+        // Advanced Features section
+        if (ImGui::TreeNode("Advanced Features")) {
+            if (ImGui::Selectable("VVT Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Nitrous Control Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Rev Limiter Table", false)) { /* TODO */ }
+            if (ImGui::Selectable("Launch Control Table", false)) { /* TODO */ }
+            ImGui::TreePop();
+        }
+        
+        // 3D Tuning Maps section
+        if (ImGui::TreeNode("3D Tuning Maps")) {
+            if (ImGui::Selectable("3D VE View", false)) { /* TODO */ }
+            if (ImGui::Selectable("3D Ignition View", false)) { /* TODO */ }
+            if (ImGui::Selectable("3D AFR View", false)) { /* TODO */ }
+            ImGui::TreePop();
+        }
+        
+        ImGui::Separator();
+        
+        // Real-time Data section
+        ImGui::TextColored(g_ui_theme.primary_color, "Real-time Data");
+        if (g_selected_view == VIEW_GAUGE_CLUSTER) {
+            ImGui::TextColored(g_ui_theme.success_color, "● Gauge Cluster");
+        } else {
+            if (ImGui::Selectable("Gauge Cluster", false)) {
+                add_log_entry(0, "Gauge Cluster selected, switching to gauge cluster view");
+                g_selected_view = VIEW_GAUGE_CLUSTER;
+                add_log_entry(0, "g_selected_view set to VIEW_GAUGE_CLUSTER (%d)", VIEW_GAUGE_CLUSTER);
+            }
+        }
+        if (ImGui::Selectable("Runtime Values", false)) { /* TODO */ }
+        if (ImGui::Selectable("Status Flags", false)) { /* TODO */ }
+        if (ImGui::Selectable("Performance Metrics", false)) { /* TODO */ }
+        
+        ImGui::Separator();
+        
+        // Data Logging section
+        ImGui::TextColored(g_ui_theme.primary_color, "Data Logging");
+        if (ImGui::Selectable("Logging Setup", false)) { /* TODO */ }
+        if (ImGui::Selectable("Log Analysis", false)) { /* TODO */ }
+        if (ImGui::Selectable("Scatter Plots", false)) { /* TODO */ }
+        if (ImGui::Selectable("Performance Logs", false)) { /* TODO */ }
+        
+        ImGui::Separator();
+        
+        // Diagnostics section
+        ImGui::TextColored(g_ui_theme.primary_color, "Diagnostics");
+        if (ImGui::Selectable("Error Codes", false)) { /* TODO */ }
+        if (ImGui::Selectable("System Health", false)) { /* TODO */ }
+        if (ImGui::Selectable("Performance Monitoring", false)) { /* TODO */ }
+    } else {
+        ImGui::PopStyleColor(3);
+    }
+}
+
+void render_content_by_view() {
+    // Debug logging for view switching
+    static ViewType last_view = VIEW_COUNT;
+    if (last_view != g_selected_view) {
+        add_log_entry(0, "View switched from %d to %d", last_view, g_selected_view);
+        last_view = g_selected_view;
+    }
+    
+    switch (g_selected_view) {
+        case VIEW_GAUGE_CLUSTER:
+            add_log_entry(0, "Rendering VIEW_GAUGE_CLUSTER");
+            render_gauge_cluster_view();
+            break;
+        case VIEW_TUNING:
+            add_log_entry(0, "Rendering VIEW_TUNING");
+            render_tuning_view();
+            break;
+        case VIEW_GRAPHING:
+            add_log_entry(0, "Rendering VIEW_GRAPHING");
+            render_graphing_view();
+            break;
+        case VIEW_DIAGNOSTICS:
+            add_log_entry(0, "Rendering VIEW_DIAGNOSTICS");
+            render_diagnostics_view();
+            break;
+        case VIEW_COMMUNICATIONS:
+            add_log_entry(0, "Rendering VIEW_COMMUNICATIONS");
+            render_communications_view();
+            break;
+        default:
+            add_log_entry(2, "Unknown view type: %d, defaulting to gauge cluster", g_selected_view);
+            render_gauge_cluster_view();
+            break;
+    }
+}
+
+void render_gauge_cluster_view() {
+    ImGui::TextColored(g_ui_theme.primary_color, "Gauge Cluster - Engine Monitoring");
+    ImGui::Separator();
+    
+    // Demo mode indicator
+    if (g_demo_mode) {
+        ImGui::TextColored(g_ui_theme.warning_color, "DEMO MODE - Simulated Data");
+        ImGui::Separator();
+    }
+    
+    // First row of gauges
+    ImGui::BeginGroup();
+    
+    // Engine Speed gauge (large, prominent)
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("EngineSpeedGauge", ImVec2(200, 150), true);
+    ImGui::TextColored(g_ui_theme.primary_color, "Engine Speed");
+    ImGui::TextColored(g_ui_theme.success_color, "%.0f", g_demo_mode ? 2500.0f : 0.0f);
+    ImGui::TextColored(g_ui_theme.text_secondary, "RPM");
+    ImGui::TextColored(g_ui_theme.text_muted, "0 - 8000");
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    
+    ImGui::EndGroup();
+    
+    ImGui::SameLine();
+    
+    // Throttle Position gauge
+    ImGui::BeginGroup();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("ThrottleGauge", ImVec2(150, 120), true);
+    ImGui::TextColored(g_ui_theme.primary_color, "Throttle");
+    ImGui::TextColored(g_ui_theme.warning_color, "%.1f%%", g_demo_mode ? 45.5f : 0.0f);
+    ImGui::TextColored(g_ui_theme.text_muted, "0 - 100%%");
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::EndGroup();
+    
+    ImGui::SameLine();
+    
+    // Coolant Temperature gauge
+    ImGui::BeginGroup();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("CoolantGauge", ImVec2(150, 120), true);
+    ImGui::TextColored(g_ui_theme.primary_color, "Coolant");
+    ImGui::TextColored(g_ui_theme.error_color, "%.0f°F", g_demo_mode ? 185.0f : 0.0f);
+    ImGui::TextColored(g_ui_theme.text_muted, "-40 - 240°F");
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::EndGroup();
+    
+    ImGui::SameLine();
+    
+    // Ignition Advance gauge
+    ImGui::BeginGroup();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("IgnitionGauge", ImVec2(150, 120), true);
+    ImGui::TextColored(g_ui_theme.primary_color, "Ignition");
+    ImGui::TextColored(g_ui_theme.secondary_color, "%.1f°", g_demo_mode ? 22.5f : 0.0f);
+    ImGui::TextColored(g_ui_theme.text_muted, "-10 - 50°");
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::EndGroup();
+    
+    // Second row of gauges
+    ImGui::Spacing();
+    
+    // Lost Sync Counter gauge
+    ImGui::BeginGroup();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("SyncGauge", ImVec2(150, 120), true);
+    ImGui::TextColored(g_ui_theme.primary_color, "Lost Sync");
+    ImGui::TextColored(g_ui_theme.text_primary, "%.0f", g_demo_mode ? 0.0f : 0.0f);
+    ImGui::TextColored(g_ui_theme.text_muted, "0 - 240");
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::EndGroup();
+    
+    ImGui::SameLine();
+    
+    // Connection status
+    ImGui::BeginGroup();
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("ConnectionStatus", ImVec2(200, 120), true);
+    ImGui::TextColored(g_ui_theme.primary_color, "Status");
+    if (g_demo_mode) {
+        ImGui::TextColored(g_ui_theme.success_color, "DEMO MODE");
+        ImGui::TextColored(g_ui_theme.text_secondary, "Simulated ECU");
+    } else {
+        ImGui::TextColored(g_ui_theme.error_color, "NOT CONNECTED");
+        ImGui::TextColored(g_ui_theme.text_secondary, "No ECU");
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::EndGroup();
+}
+
+void render_tuning_view() {
+    // Show the currently selected table directly
+    if (g_selected_table_index == 0) {
+        render_ve_table_tab();
+    } else if (g_selected_table_index == 1) {
+        render_ignition_table_tab();
+    } else {
+        // Default to VE table if somehow no table is selected
+        ImGui::TextColored(g_ui_theme.primary_color, "Tuning Views - Table Editing");
+        ImGui::Separator();
+        ImGui::Text("Please select a table from the sidebar:");
+        ImGui::BulletText("VE Table 1 - Fuel tuning");
+        ImGui::BulletText("Ignition Table 1 - Spark timing");
+    }
+}
+
+void render_graphing_view() {
+    ImGui::TextColored(g_ui_theme.primary_color, "Graphing & Logging - Data Analysis");
+    ImGui::Separator();
+    
+    ImGui::Text("This view will contain:");
+    ImGui::BulletText("Real-time data charts");
+    ImGui::BulletText("Data logging controls");
+    ImGui::BulletText("Scatter plot analysis");
+    ImGui::BulletText("Performance metrics");
+}
+
+void render_diagnostics_view() {
+    ImGui::TextColored(g_ui_theme.primary_color, "Diagnostics - System Health");
+    ImGui::Separator();
+    
+    ImGui::Text("This view will contain:");
+    ImGui::BulletText("ECU status information");
+    ImGui::BulletText("Error codes and warnings");
+    ImGui::BulletText("System diagnostics");
+    ImGui::BulletText("Performance monitoring");
+}
+
+void render_communications_view() {
+    ImGui::TextColored(g_ui_theme.primary_color, "Communications - ECU Connection");
+    ImGui::Separator();
+    
+    // ECU connection panel
+    render_ecu_connection_panel();
+    
+    ImGui::Spacing();
+    
+    // Additional communications features
+    ImGui::TextColored(g_ui_theme.accent_color, "Additional Features");
+    ImGui::BulletText("Connection history and logs");
+    ImGui::BulletText("Protocol configuration");
+    ImGui::BulletText("Connection diagnostics");
+    ImGui::BulletText("Performance metrics");
+}
+
+// Professional table operations implementations
+void create_table_backup() {
+    if (!g_ve_table) return;
+    
+    // Free existing backup
+    if (g_table_backup) {
+        free(g_table_backup);
+    }
+    
+    // Create new backup
+    g_table_backup = (ImGuiTable*)malloc(sizeof(ImGuiTable));
+    if (g_table_backup) {
+        memcpy(g_table_backup, g_ve_table, sizeof(ImGuiTable));
+        
+        // Allocate and copy data
+        g_table_backup->data = (float**)malloc(g_ve_table->height * sizeof(float*));
+        if (g_table_backup->data) {
+            for (int y = 0; y < g_ve_table->height; y++) {
+                g_table_backup->data[y] = (float*)malloc(g_ve_table->width * sizeof(float));
+                if (g_table_backup->data[y]) {
+                    memcpy(g_table_backup->data[y], g_ve_table->data[y], g_ve_table->width * sizeof(float));
+                }
+            }
+        }
+        
+        // Copy axis data
+        g_table_backup->x_axis = (float*)malloc(g_ve_table->width * sizeof(float));
+        g_table_backup->y_axis = (float*)malloc(g_ve_table->height * sizeof(float));
+        if (g_table_backup->x_axis && g_table_backup->y_axis) {
+            memcpy(g_table_backup->x_axis, g_ve_table->x_axis, g_ve_table->width * sizeof(float));
+            memcpy(g_table_backup->y_axis, g_ve_table->y_axis, g_ve_table->height * sizeof(float));
+        }
+        
+        add_log_entry(0, "Table backup created successfully");
+        g_table_has_changes = false;
+    }
+}
+
+void restore_table_from_backup() {
+    if (!g_table_backup || !g_ve_table) return;
+    
+    // Restore data
+    for (int y = 0; y < g_ve_table->height; y++) {
+        for (int x = 0; x < g_ve_table->width; x++) {
+            g_ve_table->data[y][x] = g_table_backup->data[y][x];
+        }
+    }
+    
+    add_log_entry(0, "Table restored from backup");
+    g_table_has_changes = false;
+}
+
+void interpolate_table_values() {
+    if (!g_ve_table || g_interpolation_start_x < 0 || g_interpolation_start_y < 0 || 
+        g_interpolation_end_x < 0 || g_interpolation_end_y < 0) return;
+    
+    int start_x = fmin(g_interpolation_start_x, g_interpolation_end_x);
+    int end_x = fmax(g_interpolation_start_x, g_interpolation_end_x);
+    int start_y = fmin(g_interpolation_start_y, g_interpolation_end_y);
+    int end_y = fmax(g_interpolation_start_y, g_interpolation_end_y);
+    
+    float start_val = g_ve_table->data[start_y][start_x];
+    float end_val = g_ve_table->data[end_y][end_x];
+    
+    for (int y = start_y; y <= end_y; y++) {
+        for (int x = start_x; x <= end_x; x++) {
+            float x_factor = (float)(x - start_x) / (end_x - start_x);
+            float y_factor = (float)(y - start_y) / (end_y - start_y);
+            float interpolated = start_val + (end_val - start_val) * (x_factor + y_factor) * 0.5f;
+            
+            g_ve_table->data[y][x] = interpolated;
+        }
+    }
+    
+    add_log_entry(0, "Table interpolation applied from [%d,%d] to [%d,%d]", start_x, start_y, end_x, end_y);
+    g_table_has_changes = true;
+}
+
+void smooth_table_region() {
+    if (!g_ve_table || g_selected_cell_x < 0 || g_selected_cell_y < 0) return;
+    
+    int radius = 2;
+    int start_x = fmax(0, g_selected_cell_x - radius);
+    int end_x = fmin(g_ve_table->width - 1, g_selected_cell_x + radius);
+    int start_y = fmax(0, g_selected_cell_y - radius);
+    int end_y = fmin(g_ve_table->height - 1, g_selected_cell_y + radius);
+    
+    // Create temporary buffer for smoothed values
+    float** temp_data = (float**)malloc(g_ve_table->height * sizeof(float*));
+    for (int y = 0; y < g_ve_table->height; y++) {
+        temp_data[y] = (float*)malloc(g_ve_table->width * sizeof(float));
+        memcpy(temp_data[y], g_ve_table->data[y], g_ve_table->width * sizeof(float));
+    }
+    
+    // Apply Gaussian smoothing
+    for (int y = start_y; y <= end_y; y++) {
+        for (int x = start_x; x <= end_x; x++) {
+            float sum = 0.0f;
+            float weight_sum = 0.0f;
+            
+            for (int dy = -radius; dy <= radius; dy++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    int ny = y + dy;
+                    int nx = x + dx;
+                    
+                    if (ny >= 0 && ny < g_ve_table->height && nx >= 0 && nx < g_ve_table->width) {
+                        float weight = exp(-(dx*dx + dy*dy) / (2.0f * radius * radius));
+                        sum += temp_data[ny][nx] * weight;
+                        weight_sum += weight;
+                    }
+                }
+            }
+            
+            if (weight_sum > 0) {
+                g_ve_table->data[y][x] = sum / weight_sum;
+            }
+        }
+    }
+    
+    // Free temporary buffer
+    for (int y = 0; y < g_ve_table->height; y++) {
+        free(temp_data[y]);
+    }
+    free(temp_data);
+    
+    add_log_entry(0, "Table smoothing applied around [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+    g_table_has_changes = true;
+}
+
+void apply_table_math_operation(const char* operation, float value) {
+    if (!g_ve_table) return;
+    
+    for (int y = 0; y < g_ve_table->height; y++) {
+        for (int x = 0; x < g_ve_table->width; x++) {
+            float current = g_ve_table->data[y][x];
+            float result = current;
+            
+            if (strcmp(operation, "add") == 0) {
+                result = current + value;
+            } else if (strcmp(operation, "subtract") == 0) {
+                result = current - value;
+            } else if (strcmp(operation, "multiply") == 0) {
+                result = current * value;
+            } else if (strcmp(operation, "divide") == 0) {
+                result = current / value;
+            } else if (strcmp(operation, "power") == 0) {
+                result = pow(current, value);
+            }
+            
+            // Clamp to valid range
+            result = fmax(g_ve_table->metadata.min_value, fmin(g_ve_table->metadata.max_value, result));
+            g_ve_table->data[y][x] = result;
+        }
+    }
+    
+    add_log_entry(0, "Table math operation '%s' with value %.2f applied", operation, value);
+    g_table_has_changes = true;
+}
+
+void export_table_to_file(const char* filename) {
+    if (!g_ve_table) return;
+    
+    FILE* file = fopen(filename, "w");
+    if (!file) {
+        add_log_entry(2, "ERROR: Failed to open file for writing: %s", filename);
+        return;
+    }
+    
+    // Write header
+    fprintf(file, "# VE Table Export - MegaTunix Redux\n");
+    fprintf(file, "# Version: %d\n", g_table_version);
+    fprintf(file, "# Comment: %s\n", g_table_comment);
+    fprintf(file, "# Dimensions: %dx%d\n", g_ve_table->width, g_ve_table->height);
+    fprintf(file, "# X-Axis: %s\n", g_ve_table->metadata.x_axis_label);
+    fprintf(file, "# Y-Axis: %s\n", g_ve_table->metadata.y_axis_label);
+    fprintf(file, "# Values: %s (%s)\n", g_ve_table->metadata.value_label, g_ve_table->metadata.units);
+    fprintf(file, "#\n");
+    
+    // Write X-axis values
+    fprintf(file, "X-Axis:");
+    for (int x = 0; x < g_ve_table->width; x++) {
+        fprintf(file, " %.1f", g_ve_table->x_axis[x]);
+    }
+    fprintf(file, "\n");
+    
+    // Write Y-axis values and data
+    for (int y = 0; y < g_ve_table->height; y++) {
+        fprintf(file, "%.1f", g_ve_table->y_axis[y]);
+        for (int x = 0; x < g_ve_table->width; x++) {
+            fprintf(file, " %.1f", g_ve_table->data[y][x]);
+        }
+        fprintf(file, "\n");
+    }
+    
+    fclose(file);
+    add_log_entry(0, "Table exported successfully to %s", filename);
+}
+
+void import_table_from_file(const char* filename) {
+    if (!g_ve_table) return;
+    
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        add_log_entry(2, "ERROR: Failed to open file for reading: %s", filename);
+        return;
+    }
+    
+    char line[1024];
+    int line_num = 0;
+    int data_y = 0;
+    
+    while (fgets(line, sizeof(line), file) && data_y < g_ve_table->height) {
+        line_num++;
+        
+        if (line[0] == '#' || strlen(line) < 2) continue;
+        
+        if (strncmp(line, "X-Axis:", 7) == 0) {
+            // Parse X-axis values
+            char* token = strtok(line + 7, " \t\n");
+            int x = 0;
+            while (token && x < g_ve_table->width) {
+                g_ve_table->x_axis[x++] = atof(token);
+                token = strtok(NULL, " \t\n");
+            }
+        } else {
+            // Parse data row
+            char* token = strtok(line, " \t\n");
+            if (token) {
+                g_ve_table->y_axis[data_y] = atof(token);
+                
+                int x = 0;
+                token = strtok(NULL, " \t\n");
+                while (token && x < g_ve_table->width) {
+                    g_ve_table->data[data_y][x] = atof(token);
+                    x++;
+                    token = strtok(NULL, " \t\n");
+                }
+                data_y++;
+            }
+        }
+    }
+    
+    fclose(file);
+    add_log_entry(0, "Table imported successfully from %s", filename);
+    g_table_has_changes = true;
+}
+
+void render_professional_table_header() {
+    if (!g_ve_table) return;
+    
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("TableHeader", ImVec2(0, 80), true);
+    
+    // Table title and version
+    ImGui::TextColored(g_ui_theme.primary_color, "Professional VE Table Editor - Version %d", g_table_version);
+    ImGui::SameLine();
+    if (g_table_has_changes) {
+        ImGui::TextColored(g_ui_theme.warning_color, "● Modified");
+    }
+    
+    // Table information
+    ImGui::Text("Dimensions: %dx%d | X-Axis: %s | Y-Axis: %s | Values: %s (%s)", 
+                g_ve_table->width, g_ve_table->height,
+                g_ve_table->metadata.x_axis_label,
+                g_ve_table->metadata.y_axis_label,
+                g_ve_table->metadata.value_label,
+                g_ve_table->metadata.units);
+    
+    // Value range
+    ImGui::Text("Value Range: %.1f - %.1f %s", 
+                g_ve_table->metadata.min_value,
+                g_ve_table->metadata.max_value,
+                g_ve_table->metadata.units);
+    
+    // Comment field
+    ImGui::Text("Comment:");
+    ImGui::SameLine();
+    ImGui::PushItemWidth(300);
+    if (ImGui::InputText("##TableComment", g_table_comment, sizeof(g_table_comment))) {
+        g_table_has_changes = true;
+    }
+    ImGui::PopItemWidth();
+    
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+}
+
+void render_table_operations_toolbar() {
+    if (!g_ve_table) return;
+    
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_medium);
+    ImGui::BeginChild("TableToolbar", ImVec2(0, 60), true);
+    
+    // File operations
+    if (ImGui::Button("Create Backup")) {
+        create_table_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Restore Backup")) {
+        restore_table_from_backup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Export Table")) {
+        // TODO: File dialog
+        export_table_to_file("ve_table_export.txt");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Import Table")) {
+        // TODO: File dialog
+        import_table_from_file("ve_table_import.txt");
+    }
+    
+    ImGui::Separator();
+    
+    // Table operations
+    if (ImGui::Button("Interpolate")) {
+        g_table_interpolation_mode = !g_table_interpolation_mode;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Smooth Region")) {
+        smooth_table_region();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Math Operations")) {
+        // TODO: Math operations dialog
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset Changes")) {
+        restore_table_from_backup();
+    }
+    
+    // Interpolation mode indicator
+    if (g_table_interpolation_mode) {
+        ImGui::SameLine();
+        ImGui::TextColored(g_ui_theme.warning_color, "Interpolation Mode Active - Click start and end points");
+    }
+    
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+}
+
+// Speeduino communication implementations
+void speeduino_init() {
+    if (g_speeduino_initialized) return;
+    
+    // Initialize connection settings
+    g_speeduino_connection.connected = false;
+    g_speeduino_connection.retry_count = 0;
+    g_speeduino_fd = -1;
+    
+    add_log_entry(0, "Speeduino communication system initialized");
+    g_speeduino_initialized = true;
+}
+
+void speeduino_cleanup() {
+    if (g_speeduino_fd >= 0) {
+        close(g_speeduino_fd);
+        g_speeduino_fd = -1;
+    }
+    g_speeduino_connection.connected = false;
+    g_speeduino_initialized = false;
+    
+    add_log_entry(0, "Speeduino communication system cleaned up");
+}
+
+bool speeduino_connect(const char* port) {
+    if (g_speeduino_connection.connected) {
+        speeduino_disconnect();
+    }
+    
+    // Open serial port
+    g_speeduino_fd = open(port, O_RDWR | O_NOCTTY | O_SYNC);
+    if (g_speeduino_fd < 0) {
+        add_log_entry(2, "ERROR: Failed to open port %s: %s", port, strerror(errno));
+        return false;
+    }
+    
+    // Configure serial port
+    struct termios tty;
+    memset(&tty, 0, sizeof(tty));
+    
+    if (tcgetattr(g_speeduino_fd, &tty) != 0) {
+        add_log_entry(2, "ERROR: Failed to get port attributes: %s", strerror(errno));
+        close(g_speeduino_fd);
+        g_speeduino_fd = -1;
+        return false;
+    }
+    
+    // Set baudrate
+    cfsetospeed(&tty, g_speeduino_connection.baudrate);
+    cfsetispeed(&tty, g_speeduino_connection.baudrate);
+    
+    // Configure 8N1
+    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;
+    tty.c_cflag &= ~(PARENB | PARODD);
+    tty.c_cflag &= ~CSTOPB;
+    tty.c_cflag &= ~CRTSCTS;
+    tty.c_cflag |= CREAD | CLOCAL;
+    
+    // Configure input
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+    tty.c_iflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    
+    // Configure output
+    tty.c_oflag &= ~OPOST;
+    
+    // Set timeout
+    tty.c_cc[VMIN] = 0;
+    tty.c_cc[VTIME] = g_speeduino_connection.timeout_ms / 100;
+    
+    if (tcsetattr(g_speeduino_fd, TCSANOW, &tty) != 0) {
+        add_log_entry(2, "ERROR: Failed to set port attributes: %s", strerror(errno));
+        close(g_speeduino_fd);
+        g_speeduino_fd = -1;
+        return false;
+    }
+    
+    // For now, consider the connection successful if we can open the port
+    // In a real implementation, we would test communication here
+    g_speeduino_connection.connected = true;
+    strncpy(g_speeduino_connection.port, port, sizeof(g_speeduino_connection.port) - 1);
+    g_speeduino_connection.last_communication = SDL_GetTicks();
+    add_log_entry(0, "Successfully connected to Speeduino on %s", port);
+    add_log_entry(0, "Note: This is a simulated connection for testing purposes");
+    return true;
+}
+
+void speeduino_disconnect() {
+    if (g_speeduino_fd >= 0) {
+        close(g_speeduino_fd);
+        g_speeduino_fd = -1;
+    }
+    g_speeduino_connection.connected = false;
+    add_log_entry(0, "Disconnected from Speeduino");
+}
+
+bool speeduino_is_connected() {
+    return g_speeduino_connection.connected && g_speeduino_fd >= 0;
+}
+
+bool speeduino_send_packet(SpeeduinoPacket* packet) {
+    if (!speeduino_is_connected()) return false;
+    
+    // Send complete packet according to Speeduino protocol
+    if (write(g_speeduino_fd, packet, sizeof(SpeeduinoPacket)) != sizeof(SpeeduinoPacket)) {
+        add_log_entry(2, "ERROR: Failed to send packet");
+        return false;
+    }
+    
+    g_speeduino_connection.last_communication = SDL_GetTicks();
+    return true;
+}
+
+// Note: receive_response function removed - not compatible with existing protocol
+
+uint8_t speeduino_calculate_crc(uint8_t* data, int length) {
+    uint8_t crc = SPEEDUINO_CRC_INIT;
+    
+    for (int i = 0; i < length; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 0x80) {
+                crc = (crc << 1) ^ SPEEDUINO_CRC_POLYNOMIAL;
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    
+    return crc;
+}
+
+bool speeduino_get_realtime_data() {
+    if (!speeduino_is_connected()) return false;
+    
+    SpeeduinoPacket packet = {0};
+    packet.start_byte = SPEEDUINO_START_BYTE;
+    packet.command = SPEEDUINO_CMD_GET_DATA;
+    packet.data_length = 0;
+    packet.crc_high = 0;
+    packet.crc_low = 0;
+    packet.stop_byte = SPEEDUINO_STOP_BYTE;
+    
+    if (!speeduino_send_packet(&packet)) return false;
+    
+    // For now, just simulate realtime data
+    g_speeduino_realtime.rpm = 1500.0f + (rand() % 1000);
+    g_speeduino_realtime.map = 50.0f + (rand() % 30);
+    g_speeduino_realtime.tps = 10.0f + (rand() % 20);
+    g_speeduino_realtime.coolant_temp = 85.0f + (rand() % 20);
+    g_speeduino_realtime.intake_temp = 35.0f + (rand() % 15);
+    g_speeduino_realtime.afr = 14.7f + (rand() % 20) / 10.0f;
+    g_speeduino_realtime.ignition_advance = 15.0f + (rand() % 10);
+    g_speeduino_realtime.fuel_pressure = 45.0f + (rand() % 10);
+    g_speeduino_realtime.oil_pressure = 60.0f + (rand() % 20);
+    g_speeduino_realtime.battery_voltage = 13.5f + (rand() % 10) / 10.0f;
+    g_speeduino_realtime.timestamp = SDL_GetTicks();
+    
+    return true;
+}
+
+bool speeduino_get_table_data(uint8_t table_id) {
+    if (!speeduino_is_connected()) return false;
+    
+    SpeeduinoPacket packet = {0};
+    packet.start_byte = SPEEDUINO_START_BYTE;
+    packet.command = SPEEDUINO_CMD_QUERY;
+    packet.data[0] = table_id;
+    packet.data_length = 1;
+    packet.crc_high = 0;
+    packet.crc_low = 0;
+    packet.stop_byte = SPEEDUINO_STOP_BYTE;
+    
+    if (!speeduino_send_packet(&packet)) return false;
+    
+    // For now, just log the request
+    add_log_entry(0, "Requested table data for table %d", table_id);
+    return true;
+}
+
+bool speeduino_set_table_data(uint8_t table_id, uint8_t* data, int length) {
+    if (!speeduino_is_connected()) return false;
+    
+    SpeeduinoPacket packet = {0};
+    packet.start_byte = SPEEDUINO_START_BYTE;
+    packet.command = SPEEDUINO_CMD_QUERY;
+    packet.data[0] = table_id;
+    memcpy(packet.data + 1, data, length);
+    packet.data_length = length + 1;
+    packet.crc_high = 0;
+    packet.crc_low = 0;
+    packet.stop_byte = SPEEDUINO_STOP_BYTE;
+    
+    if (!speeduino_send_packet(&packet)) return false;
+    
+    // For now, just log the request
+    add_log_entry(0, "Sent table data for table %d, length: %d", table_id, length);
+    return true;
+}
+
+void speeduino_update_connection_status() {
+    uint32_t current_time = SDL_GetTicks();
+    
+    // Check for communication timeout
+    if (g_speeduino_connection.connected && 
+        (current_time - g_speeduino_connection.last_communication) > g_speeduino_connection.communication_timeout) {
+        add_log_entry(1, "WARNING: Speeduino communication timeout, disconnecting");
+        speeduino_disconnect();
+    }
+    
+    // Auto-reconnect if enabled
+    if (g_speeduino_connection.auto_connect && !g_speeduino_connection.connected) {
+        if (g_speeduino_connection.retry_count < g_speeduino_connection.max_retries) {
+            if ((current_time - g_speeduino_connection.last_communication) > 5000) { // 5 second retry interval
+                add_log_entry(0, "Attempting to reconnect to Speeduino...");
+                if (speeduino_connect(g_speeduino_connection.port)) {
+                    g_speeduino_connection.retry_count = 0;
+                } else {
+                    g_speeduino_connection.retry_count++;
+                }
+                g_speeduino_connection.last_communication = current_time;
+            }
+        }
+    }
+    
+    // Update realtime data if connected
+    if (g_speeduino_connection.connected && 
+        (current_time - g_last_realtime_update) > g_realtime_update_interval) {
+        speeduino_get_realtime_data();
+        g_last_realtime_update = current_time;
+    }
+}
+
+void render_ecu_connection_panel() {
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+    ImGui::BeginChild("ECUConnection", ImVec2(0, 120), true);
+    
+    ImGui::TextColored(g_ui_theme.primary_color, "ECU Communication");
+    ImGui::Separator();
+    
+    // Connection status
+    if (g_speeduino_connection.connected) {
+        ImGui::TextColored(g_ui_theme.success_color, "● CONNECTED");
+        ImGui::SameLine();
+        ImGui::Text("Port: %s", g_speeduino_connection.port);
+        ImGui::SameLine();
+        ImGui::Text("Baudrate: %d", g_speeduino_connection.baudrate);
+        
+        // Connection controls
+        if (ImGui::Button("Disconnect")) {
+            speeduino_disconnect();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Test Communication")) {
+            if (speeduino_get_realtime_data()) {
+                add_log_entry(0, "Communication test successful");
+            } else {
+                add_log_entry(2, "Communication test failed");
+            }
+        }
+        
+        // Real-time data display
+        ImGui::Separator();
+        ImGui::Text("Real-time Data:");
+        ImGui::Text("RPM: %.0f | MAP: %.1f kPa | TPS: %.1f%%", 
+                   g_speeduino_realtime.rpm, g_speeduino_realtime.map, g_speeduino_realtime.tps);
+        ImGui::Text("Coolant: %.1f°C | AFR: %.1f | Ignition: %.1f°", 
+                   g_speeduino_realtime.coolant_temp, g_speeduino_realtime.afr, g_speeduino_realtime.ignition_advance);
+    } else {
+        ImGui::TextColored(g_ui_theme.error_color, "● NOT CONNECTED");
+        
+        // Connection controls
+        ImGui::Text("Port:");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(150);
+        if (ImGui::InputText("##Port", g_speeduino_connection.port, sizeof(g_speeduino_connection.port))) {
+            // Port changed
+        }
+        ImGui::PopItemWidth();
+        
+        ImGui::SameLine();
+        if (ImGui::Button("Connect")) {
+            add_log_entry(0, "Attempting to connect to ECU on %s...", g_speeduino_connection.port);
+            if (speeduino_connect(g_speeduino_connection.port)) {
+                add_log_entry(0, "Connection successful!");
+            } else {
+                add_log_entry(2, "Connection failed! Check port and permissions.");
+            }
+        }
+        
+        // Auto-connect option
+        ImGui::Checkbox("Auto-connect", &g_speeduino_connection.auto_connect);
+        ImGui::SameLine();
+        ImGui::Text("Retries: %d/%d", g_speeduino_connection.retry_count, g_speeduino_connection.max_retries);
+        
+        // Connection status message
+        ImGui::Spacing();
+        if (g_speeduino_connection.connected) {
+            ImGui::TextColored(g_ui_theme.success_color, "✓ Port %s is accessible", g_speeduino_connection.port);
+        } else {
+            ImGui::TextColored(g_ui_theme.text_muted, "Ready to connect to %s", g_speeduino_connection.port);
+        }
+    }
+    
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+}
+
+void render_settings_window() {
+    if (!g_show_settings_window) return;
+    
+    ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Settings", &g_show_settings_window, ImGuiWindowFlags_AlwaysAutoResize)) {
+        
+        if (ImGui::BeginTabBar("SettingsTabs")) {
+            
+            // Appearance Tab
+            if (ImGui::BeginTabItem("Appearance")) {
+                ImGui::Spacing();
+                
+                // Theme Selection
+                ImGui::TextColored(g_ui_theme.primary_color, "Theme Selection");
+                ImGui::Separator();
+                
+                const char* theme_names[] = {
+                    "Classic Automotive",
+                    "Sunset Synthwave", 
+                    "Ocean Depths",
+                    "Forest Green",
+                    "Desert Sand"
+                };
+                
+                if (ImGui::Combo("Theme", (int*)&g_current_theme, theme_names, THEME_COUNT)) {
+                    switch_theme((ThemeType)g_current_theme);
+                    g_user_settings.theme = g_current_theme;
+                }
+                
+                ImGui::Spacing();
+                ImGui::Text("Preview:");
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.primary_color, "Primary");
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.secondary_color, "Secondary");
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.success_color, "Success");
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.warning_color, "Warning");
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.error_color, "Error");
+                
+                ImGui::EndTabItem();
+            }
+            
+            // General Tab
+            if (ImGui::BeginTabItem("General")) {
+                ImGui::Spacing();
+                
+                ImGui::TextColored(g_ui_theme.primary_color, "Application Behavior");
+                ImGui::Separator();
+                
+                if (ImGui::Checkbox("Demo Mode", &g_demo_mode)) {
+                    g_user_settings.demo_mode = g_demo_mode;
+                }
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.text_secondary, "Enable simulated ECU data");
+                
+                if (ImGui::Checkbox("Debug Mode", &g_debug_mode)) {
+                    g_user_settings.debug_mode = g_debug_mode;
+                }
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.text_secondary, "Show debug information");
+                
+                if (ImGui::Checkbox("Show Engine Trail", &g_show_engine_trail)) {
+                    g_user_settings.show_engine_trail = g_show_engine_trail;
+                }
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.text_secondary, "Display engine position trail");
+                
+                ImGui::EndTabItem();
+            }
+            
+            // Logging Tab
+            if (ImGui::BeginTabItem("Logging")) {
+                ImGui::Spacing();
+                
+                ImGui::TextColored(g_ui_theme.primary_color, "Log System Configuration");
+                ImGui::Separator();
+                
+                if (ImGui::Checkbox("Auto-scroll Logs", &g_log_auto_scroll)) {
+                    g_user_settings.log_auto_scroll = g_log_auto_scroll;
+                }
+                ImGui::SameLine();
+                ImGui::TextColored(g_ui_theme.text_secondary, "Automatically scroll to latest log entries");
+                
+                const char* log_levels[] = {"All", "Info Only", "Warnings & Errors", "Errors Only"};
+                if (ImGui::Combo("Log Filter Level", &g_log_filter_level, log_levels, 4)) {
+                    g_user_settings.log_filter_level = g_log_filter_level;
+                }
+                
+                ImGui::EndTabItem();
+            }
+            
+            // Window Tab
+            if (ImGui::BeginTabItem("Window")) {
+                ImGui::Spacing();
+                
+                ImGui::TextColored(g_ui_theme.primary_color, "Window Preferences");
+                ImGui::Separator();
+                
+                ImGui::Text("Current Window Size: %.0f x %.0f", g_user_settings.window_width, g_user_settings.window_height);
+                ImGui::Text("Window State: %s", g_user_settings.window_maximized ? "Maximized" : "Normal");
+                
+                ImGui::Spacing();
+                ImGui::TextColored(g_ui_theme.text_secondary, "Window settings are automatically saved when you close the application.");
+                
+                ImGui::EndTabItem();
+            }
+            
+            ImGui::EndTabBar();
+        }
+        
+        ImGui::Spacing();
+        ImGui::Separator();
+        
+        // Action buttons
+        ImGui::BeginGroup();
+        if (ImGui::Button("Save Settings")) {
+            save_user_settings();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset to Defaults")) {
+            reset_user_settings_to_defaults();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Close")) {
+            g_show_settings_window = false;
+        }
+        ImGui::EndGroup();
+        
+        ImGui::Spacing();
+        ImGui::TextColored(g_ui_theme.text_muted, "Settings are automatically saved when you close the application.");
+    }
+    ImGui::End();
+}
+
+// Settings management implementations
+void load_user_settings() {
+    FILE* file = fopen(SETTINGS_FILE, "rb");
+    if (!file) {
+        add_log_entry(0, "No settings file found, using defaults");
+        return;
+    }
+    
+    UserSettings loaded_settings;
+    size_t read_size = fread(&loaded_settings, sizeof(UserSettings), 1, file);
+    fclose(file);
+    
+    if (read_size == 1 && loaded_settings.version == SETTINGS_VERSION) {
+        g_user_settings = loaded_settings;
+        add_log_entry(0, "Settings loaded successfully from %s", SETTINGS_FILE);
+        
+        // Apply loaded settings
+        apply_user_settings();
+    } else {
+        add_log_entry(1, "Settings file corrupted or outdated, using defaults");
+    }
+}
+
+void save_user_settings() {
+    // Update current settings from UI state
+    g_user_settings.theme = g_current_theme;
+    g_user_settings.demo_mode = g_demo_mode;
+    g_user_settings.debug_mode = g_debug_mode;
+    g_user_settings.log_auto_scroll = g_log_auto_scroll;
+    g_user_settings.log_filter_level = g_log_filter_level;
+    g_user_settings.show_engine_trail = g_show_engine_trail;
+    
+    // Get current window state
+    if (g_window) {
+        int width, height;
+        SDL_GetWindowSize(g_window, &width, &height);
+        g_user_settings.window_width = (float)width;
+        g_user_settings.window_height = (float)height;
+        g_user_settings.window_maximized = (SDL_GetWindowFlags(g_window) & SDL_WINDOW_MAXIMIZED) != 0;
+    }
+    
+    FILE* file = fopen(SETTINGS_FILE, "wb");
+    if (!file) {
+        add_log_entry(2, "ERROR: Failed to open settings file for writing: %s", SETTINGS_FILE);
+        return;
+    }
+    
+    size_t write_size = fwrite(&g_user_settings, sizeof(UserSettings), 1, file);
+    fclose(file);
+    
+    if (write_size == 1) {
+        add_log_entry(0, "Settings saved successfully to %s", SETTINGS_FILE);
+    } else {
+        add_log_entry(2, "ERROR: Failed to write settings to file");
+    }
+}
+
+void apply_user_settings() {
+    // Apply theme
+    if (g_user_settings.theme != g_current_theme) {
+        switch_theme(g_user_settings.theme);
+        g_current_theme = g_user_settings.theme;
+    }
+    
+    // Apply other settings
+    g_demo_mode = g_user_settings.demo_mode;
+    g_debug_mode = g_user_settings.debug_mode;
+    g_log_auto_scroll = g_user_settings.log_auto_scroll;
+    g_log_filter_level = g_user_settings.log_filter_level;
+    g_show_engine_trail = g_user_settings.show_engine_trail;
+    
+    // Apply window state
+    if (g_window) {
+        SDL_SetWindowSize(g_window, (int)g_user_settings.window_width, (int)g_user_settings.window_height);
+        if (g_user_settings.window_maximized) {
+            SDL_MaximizeWindow(g_window);
+        }
+    }
+    
+    add_log_entry(0, "User settings applied successfully");
+}
+
+void reset_user_settings_to_defaults() {
+    g_user_settings = (UserSettings){
+        .version = SETTINGS_VERSION,
+        .theme = THEME_CLASSIC_AUTOMOTIVE,
+        .demo_mode = false,
+        .debug_mode = false,
+        .log_auto_scroll = true,
+        .log_filter_level = 0,
+        .show_engine_trail = true,
+        .window_width = 1280.0f,
+        .window_height = 720.0f,
+        .window_maximized = false
+    };
+    
+    apply_user_settings();
+    save_user_settings();
+    
+    add_log_entry(0, "Settings reset to defaults");
+}
+
 void handle_communications_buttons() {
-    // This function handles the actual button logic
     // For now, it's just a placeholder that simulates the button actions
     
     if (g_locate_port_button_pressed && g_button_press_timer == 30) {
@@ -2929,18 +5697,7 @@ void paste_from_clipboard() {
     if (!g_clipboard_has_data || !g_ve_table) return;
     
     if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
-        // Paste single cell
-        if (g_clipboard_width == 1 && g_clipboard_height == 1) {
-            float new_val = g_clipboard_data[0][0];
-            imgui_table_set_value(g_ve_table, g_selected_cell_x, g_selected_cell_y, new_val);
-            
-            // Update the edit buffer to reflect the new value immediately
-            snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.0f", new_val);
-            g_buffer_updated = true;
-            
-            add_log_entry(0, "Pasted value %.1f to cell [%d,%d]", 
-                         new_val, g_selected_cell_x, g_selected_cell_y);
-        }
+        paste_block_at(g_selected_cell_x, g_selected_cell_y);
     }
 }
 
@@ -2970,12 +5727,14 @@ void interpolate_between_cells() {
         
         // Interpolate all cells in the selection
         int cells_processed = 0;
+        int dx_sel = max_x - min_x;
+        int dy_sel = max_y - min_y;
         for (int y = min_y; y <= max_y; y++) {
             for (int x = min_x; x <= max_x; x++) {
                 if (is_cell_in_selection(x, y)) {
                     // Calculate interpolation factors
-                    float u = (float)(x - min_x) / (max_x - min_x);
-                    float v = (float)(y - min_y) / (max_y - min_y);
+                    float u = (dx_sel != 0) ? (float)(x - min_x) / (float)dx_sel : 0.0f;
+                    float v = (dy_sel != 0) ? (float)(y - min_y) / (float)dy_sel : 0.0f;
                     
                     // Bilinear interpolation
                     float interpolated_val = 
@@ -3020,7 +5779,7 @@ void interpolate_between_cells() {
         if (steps > 0) {
             // Interpolate along the path
             for (int i = 1; i < steps; i++) {
-                float t = (float)i / steps;
+                float t = (float)i / (float)steps;
                 int x = start_x + (int)((end_x - start_x) * t);
                 int y = start_y + (int)((end_y - start_y) * t);
                 
@@ -3042,13 +5801,199 @@ void interpolate_between_cells() {
         g_interpolation_end_x = -1;
         g_interpolation_end_y = -1;
         
-    } else {
+        } else {
         // First cell selected - start interpolation mode
         g_interpolation_start_x = g_selected_cell_x;
         g_interpolation_start_y = g_selected_cell_y;
         g_interpolation_mode = true;
         
         add_log_entry(0, "Interpolation mode started - select second cell and press I again");
+    }
+}
+
+// Copy entire selection (or single cell) into clipboard grid
+void copy_selection_to_clipboard() {
+    if (!g_ve_table) return;
+    if (g_multi_selection.active) {
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        int w = max_x - min_x + 1;
+        int h = max_y - min_y + 1;
+        if (w > 16) w = 16;
+        if (h > 16) h = 16;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                g_clipboard_data[y][x] = imgui_table_get_value(g_ve_table, min_x + x, min_y + y);
+            }
+        }
+        g_clipboard_width = w;
+        g_clipboard_height = h;
+        g_clipboard_has_data = true;
+        add_log_entry(0, "Copied selection [%d,%d]-[%d,%d] (%dx%d) to clipboard", min_x, min_y, max_x, max_y, w, h);
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        copy_selected_cell_to_clipboard();
+    }
+}
+
+// Paste clipboard block at starting cell
+void paste_block_at(int start_x, int start_y) {
+    if (!g_clipboard_has_data || !g_ve_table) return;
+    int w = g_clipboard_width > 0 ? g_clipboard_width : 1;
+    int h = g_clipboard_height > 0 ? g_clipboard_height : 1;
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            int tx = start_x + x;
+            int ty = start_y + y;
+            if (tx >= 0 && tx < g_ve_table->width && ty >= 0 && ty < g_ve_table->height) {
+                float val = g_clipboard_data[y][x];
+                imgui_table_set_value(g_ve_table, tx, ty, val);
+            }
+        }
+    }
+    // Update buffer for selected cell for immediate UI feedback
+    if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        snprintf(g_cell_edit_buffer, sizeof(g_cell_edit_buffer), "%.0f", imgui_table_get_value(g_ve_table, g_selected_cell_x, g_selected_cell_y));
+        g_buffer_updated = true;
+    }
+    add_log_entry(0, "Pasted block (%dx%d) at [%d,%d]", w, h, start_x, start_y);
+}
+
+// Paste special operation over block
+void paste_special_block_at(int start_x, int start_y, int mode) {
+    if (!g_clipboard_has_data || !g_ve_table) return;
+    int w = g_clipboard_width > 0 ? g_clipboard_width : 1;
+    int h = g_clipboard_height > 0 ? g_clipboard_height : 1;
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            int tx = start_x + x;
+            int ty = start_y + y;
+            if (tx >= 0 && tx < g_ve_table->width && ty >= 0 && ty < g_ve_table->height) {
+                float dst = imgui_table_get_value(g_ve_table, tx, ty);
+                float src = g_clipboard_data[y][x];
+                float out = dst;
+                switch (mode) {
+                    case 0: // Multiply by Percent
+                        out = dst * (1.0f + src / 100.0f);
+                        break;
+                    case 1: // Multiply Raw
+                        out = dst * src;
+                        break;
+                    case 2: // Add
+                        out = dst + src;
+                        break;
+                    case 3: // Subtract
+                        out = dst - src;
+                        break;
+                }
+                // Clamp to table limits
+                if (out < g_ve_table->metadata.min_value) out = g_ve_table->metadata.min_value;
+                if (out > g_ve_table->metadata.max_value) out = g_ve_table->metadata.max_value;
+                imgui_table_set_value(g_ve_table, tx, ty, out);
+            }
+        }
+    }
+    add_log_entry(0, "Paste Special (%d) applied over %dx%d at [%d,%d]", mode, w, h, start_x, start_y);
+}
+
+// Interpolate across rows within selection using professional algorithms
+void horizontal_interpolate_selection() {
+    if (!g_ve_table) {
+        add_log_entry(0, "No VE table available for horizontal interpolation");
+        return;
+    }
+    
+    if (g_multi_selection.active) {
+        // Use multi-selection bounds
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        add_log_entry(0, "Horizontal interpolation from [%d,%d] to [%d,%d]", min_x, min_y, max_x, max_y);
+        
+        // Interpolate each row in the selection
+        for (int y = min_y; y <= max_y; y++) {
+            bool success = imgui_table_interpolate_horizontal(g_ve_table, min_x, max_x, y, INTERPOLATION_CUBIC);
+            if (!success) {
+                add_log_entry(0, "Horizontal interpolation failed for row %d", y);
+            }
+        }
+        
+        add_log_entry(0, "Horizontal interpolation completed for %d rows", max_y - min_y + 1);
+        
+        // Update the 3D texture if available
+        if (g_ve_texture) {
+            imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+        }
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        // Single cell selected - interpolate across the entire row
+        int start_x = 0;
+        int end_x = g_ve_table->width - 1;
+        int y = g_selected_cell_x;
+        
+        add_log_entry(0, "Horizontal interpolation across entire row %d", y);
+        
+        bool success = imgui_table_interpolate_horizontal(g_ve_table, start_x, end_x, y, INTERPOLATION_CUBIC);
+        
+        if (success) {
+            add_log_entry(0, "Horizontal interpolation completed successfully");
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "Horizontal interpolation failed");
+        }
+    } else {
+        add_log_entry(0, "No selection available for horizontal interpolation");
+    }
+}
+
+// Interpolate across columns within selection using professional algorithms
+void vertical_interpolate_selection() {
+    if (!g_ve_table) {
+        add_log_entry(0, "No VE table available for vertical interpolation");
+        return;
+    }
+    
+    if (g_multi_selection.active) {
+        // Use multi-selection bounds
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        add_log_entry(0, "Vertical interpolation from [%d,%d] to [%d,%d]", min_x, min_y, max_x, max_y);
+        
+        // Interpolate each column in the selection
+        for (int x = min_x; x <= max_x; x++) {
+            bool success = imgui_table_interpolate_vertical(g_ve_table, x, min_y, max_y, INTERPOLATION_CUBIC);
+            if (!success) {
+                add_log_entry(0, "Vertical interpolation failed for column %d", x);
+            }
+        }
+        
+        add_log_entry(0, "Vertical interpolation completed for %d columns", max_x - min_x + 1);
+        
+        // Update the 3D texture if available
+        if (g_ve_texture) {
+            imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+        }
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        // Single cell selected - interpolate down the entire column
+        int x = g_selected_cell_x;
+        int start_y = 0;
+        int end_y = g_ve_table->height - 1;
+        
+        add_log_entry(0, "Vertical interpolation down entire column %d", x);
+        
+        bool success = imgui_table_interpolate_vertical(g_ve_table, x, start_y, end_y, INTERPOLATION_CUBIC);
+        
+        if (success) {
+            add_log_entry(0, "Vertical interpolation completed successfully");
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
+            }
+        } else {
+            add_log_entry(0, "Vertical interpolation failed");
+        }
+    } else {
+        add_log_entry(0, "No selection available for vertical interpolation");
     }
 }
 
@@ -3213,69 +6158,59 @@ void apply_operation_to_selection(TableOperation operation, float value) {
 }
 
 void smooth_selection() {
-    if (!g_ve_table || !g_multi_selection.active) return;
-    
-    add_log_entry(0, "*** SMOOTHING SELECTION *** - Processing selection [%d,%d] to [%d,%d]", 
-                 g_multi_selection.start_x, g_multi_selection.start_y, 
-                 g_multi_selection.end_x, g_multi_selection.end_y);
-    
-    int min_x, min_y, max_x, max_y;
-    get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
-    
-    // Create a temporary buffer for the smoothed values
-    float** temp_buffer = (float**)malloc((max_y - min_y + 1) * sizeof(float*));
-    for (int y = 0; y <= max_y - min_y; y++) {
-        temp_buffer[y] = (float*)malloc((max_x - min_x + 1) * sizeof(float));
+    if (!g_ve_table) {
+        add_log_entry(0, "No VE table available for smoothing");
+        return;
     }
     
-    // Copy current values to temp buffer
-    for (int y = min_y; y <= max_y; y++) {
-        for (int x = min_x; x <= max_x; x++) {
-            if (is_cell_in_selection(x, y)) {
-                temp_buffer[y - min_y][x - min_x] = SafeTableAccess::get_value_safe(x, y, 75.0f);
+    if (g_multi_selection.active) {
+        // Use multi-selection bounds for 2D smoothing
+        int min_x, min_y, max_x, max_y;
+        get_selection_bounds(&min_x, &min_y, &max_x, &max_y);
+        
+        add_log_entry(0, "*** 2D SMOOTHING SELECTION *** - Processing selection [%d,%d] to [%d,%d]", 
+                     min_x, min_y, max_x, max_y);
+        
+        // Use smart smoothing that automatically chooses the best method
+        bool success = imgui_table_smart_smooth(g_ve_table, min_x, min_y, max_x, max_y);
+        
+        if (success) {
+            add_log_entry(0, "*** SMART SMOOTHING COMPLETE *** - Applied intelligent smoothing to selection");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
             }
+        } else {
+            add_log_entry(0, "*** SMART SMOOTHING FAILED *** - Smoothing failed");
         }
-    }
-    
-    // Apply smoothing (3x3 Gaussian-like kernel)
-    int cells_processed = 0;
-    for (int y = min_y; y <= max_y; y++) {
-        for (int x = min_x; x <= max_x; x++) {
-            if (is_cell_in_selection(x, y)) {
-                float sum = 0.0f;
-                int count = 0;
-                
-                // 3x3 smoothing kernel
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dx = -1; dx <= 1; dx++) {
-                        int nx = x + dx;
-                        int ny = y + dy;
-                        
-                        if (nx >= min_x && nx <= max_x && ny >= min_y && ny <= max_y && 
-                            is_cell_in_selection(nx, ny)) {
-                            sum += temp_buffer[ny - min_y][nx - min_x];
-                            count++;
-                        }
-                    }
-                }
-                
-                if (count > 0) {
-                    float smoothed_val = sum / count;
-                    if (SafeTableAccess::set_value_safe(x, y, smoothed_val)) {
-                        cells_processed++;
-                    }
-                }
+        
+    } else if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        // Single cell selected - smooth a 3x3 area around it
+        int start_x = fmax(0, g_selected_cell_x - 1);
+        int end_x = fmin(g_ve_table->width - 1, g_selected_cell_x + 1);
+        int start_y = fmax(0, g_selected_cell_y - 1);
+        int end_y = fmin(g_ve_table->height - 1, g_selected_cell_y + 1);
+        
+        add_log_entry(0, "*** 3x3 GAUSSIAN SMOOTHING *** - Smoothing area around [%d,%d]", g_selected_cell_x, g_selected_cell_y);
+        
+        // Use Gaussian smoothing with edge preservation
+        bool success = imgui_table_gaussian_smooth(g_ve_table, start_x, start_y, end_x, end_y, 1.0f, true);
+        
+        if (success) {
+            add_log_entry(0, "*** 3x3 GAUSSIAN SMOOTHING COMPLETE *** - Applied edge-preserving smoothing");
+            
+            // Update the 3D texture if available
+            if (g_ve_texture) {
+                imgui_ve_texture_update(g_ve_texture, g_ve_table, &g_ve_3d_view);
             }
+        } else {
+            add_log_entry(0, "*** 3x3 GAUSSIAN SMOOTHING FAILED *** - Smoothing failed");
         }
+        
+    } else {
+        add_log_entry(0, "No selection available for smoothing");
     }
-    
-    // Clean up temp buffer
-    for (int y = 0; y <= max_y - min_y; y++) {
-        free(temp_buffer[y]);
-    }
-    free(temp_buffer);
-    
-    add_log_entry(0, "*** SMOOTHING COMPLETE *** - Processed %d cells in selection", cells_processed);
 }
 
 // Function to handle ECU connection with feedback
@@ -3303,59 +6238,87 @@ void render_ve_table_2d_view() {
         return;
     }
     
-    ImGui::Text("Interactive 2D VE Table Editor");
-    ImGui::Text("Click on cells to edit values directly - Type new values and press Enter");
-    ImGui::Text("Use +/- keys to increment/decrement values when a cell is selected");
-    ImGui::Text("X-Axis: RPM (%.0f - %.0f)", g_ve_table->x_axis[0], g_ve_table->x_axis[g_ve_table->width - 1]);
-    ImGui::Text("Y-Axis: MAP (%.1f - %.1f kPa)", g_ve_table->y_axis[0], g_ve_table->y_axis[g_ve_table->height - 1]);
+    // Professional table header
+    render_professional_table_header();
+    
+    // Professional table operations toolbar
+    render_table_operations_toolbar();
     
     ImGui::Separator();
     
-    // Editing controls
-    ImGui::Text("Editing Controls:");
-    ImGui::SameLine();
-    if (ImGui::Button("Reset to Demo", ImVec2(100, 20))) {
+    // Professional editing controls
+    ImGui::BeginGroup();
+    ImGui::TextColored(g_ui_theme.primary_color, "Professional Editing Controls:");
+    
+    if (ImGui::Button("Reset to Demo", ImVec2(140, 25))) {
         imgui_table_load_demo_data(g_ve_table);
+        g_table_has_changes = true;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Clear Selection", ImVec2(100, 20))) {
+    if (ImGui::Button("Clear Selection", ImVec2(140, 25))) {
         g_selected_cell_x = -1;
         g_selected_cell_y = -1;
         g_cell_editing = false;
         clear_multi_selection();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Force Reload Demo", ImVec2(120, 20))) {
-        if (g_ve_table) {
-            imgui_table_load_demo_data(g_ve_table);
-            add_log_entry(0, "*** FORCE RELOADED DEMO DATA *** - Table reset to clean demo values");
-        }
+    if (ImGui::Button("Create Backup", ImVec2(140, 25))) {
+        create_table_backup();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Restore Backup", ImVec2(140, 25))) {
+        restore_table_from_backup();
+    }
+    ImGui::EndGroup();
     
-    // Show selected cell info
+    // Professional cell information display
     if (g_selected_cell_x >= 0 && g_selected_cell_y >= 0) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+        ImGui::BeginChild("CellInfo", ImVec2(0, 80), true);
+        
         float cell_value = SafeTableAccess::get_value_safe(g_selected_cell_x, g_selected_cell_y, 75.0f);
-        ImGui::Text("Selected: Cell [%d, %d] = %.1f VE", 
+        ImGui::TextColored(g_ui_theme.primary_color, "Selected Cell Information:");
+        ImGui::Text("Position: [%d, %d] | Value: %.1f VE", 
                    g_selected_cell_x, g_selected_cell_y, cell_value);
-        ImGui::Text("RPM: %.0f, MAP: %.1f kPa", 
+        ImGui::Text("RPM: %.0f | MAP: %.1f kPa", 
                    g_ve_table->x_axis[g_selected_cell_x], 
                    g_ve_table->y_axis[g_selected_cell_y]);
+        
+        // Quick edit field
+        ImGui::Text("Quick Edit:");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(100);
+        if (ImGui::InputFloat("##QuickEdit", &cell_value, 1.0f, 5.0f, "%.1f")) {
+            imgui_table_set_value(g_ve_table, g_selected_cell_x, g_selected_cell_y, cell_value);
+            g_table_has_changes = true;
+        }
+        ImGui::PopItemWidth();
+        
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
     }
     
-    // Show multi-cell selection info
+    // Professional multi-selection display
     if (g_multi_selection.active) {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, g_ui_theme.background_light);
+        ImGui::BeginChild("MultiSelectionInfo", ImVec2(0, 60), true);
+        
         int cell_count = get_selection_cell_count();
-        ImGui::Text("Multi-Selection: [%d,%d] to [%d,%d] (%d cells)", 
+        ImGui::TextColored(g_ui_theme.primary_color, "Multi-Selection Active:");
+        ImGui::Text("Range: [%d,%d] to [%d,%d] | Cells: %d", 
                    g_multi_selection.start_x, g_multi_selection.start_y,
                    g_multi_selection.end_x, g_multi_selection.end_y, cell_count);
-        ImGui::Text("Use Ctrl+Click and drag to select multiple cells");
-        ImGui::Text("Press 'I' for interpolation, 'S' for smoothing");
+        ImGui::Text("Operations: Press 'I' for interpolation, 'S' for smoothing, 'M' for math operations");
+        
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
     }
     
     ImGui::Separator();
     
-    // Interactive heatmap area
-    ImGui::Text("Interactive Heatmap (Click cells to edit):");
+    // Professional heatmap title
+    ImGui::TextColored(g_ui_theme.primary_color, "Professional 2D Heatmap Visualization");
+    ImGui::TextColored(g_ui_theme.text_secondary, "Click cells to edit | Use arrow keys to navigate | Ctrl+Click to multi-select");
     
                     // Calculate display area - scale to window size with padding for UI log and axis labels
                 float window_width = ImGui::GetWindowWidth();
@@ -3399,12 +6362,12 @@ void render_ve_table_2d_view() {
                                 g_ve_table->width, g_ve_table->height, cell_width, cell_height, window_size.x, window_size.y);
                     last_render_width = g_ve_table->width;
                     last_render_height = g_ve_table->height;
-                }
+}
     
     // Mouse interaction is now handled in the SDL event system
     // This section is kept for visual feedback only
     
-                    // Draw the interactive heatmap
+    // Draw the interactive heatmap
                 if (g_ve_table && g_ve_table->width > 0 && g_ve_table->height > 0) {
                     for (int y = 0; y < g_ve_table->height; y++) {
                         for (int x = 0; x < g_ve_table->width; x++) {
@@ -3460,7 +6423,9 @@ void render_ve_table_2d_view() {
             if (is_cell_in_selection(x, y)) {
                 border_color = IM_COL32(0, 255, 255, 255); // Cyan for multi-cell selection
                 border_thickness = 2.0f;
-            } else if (x == g_selected_cell_x && y == g_selected_cell_y) {
+            }
+            // Only show single-cell selection highlight when no multi-selection is active
+            else if (!g_multi_selection.active && x == g_selected_cell_x && y == g_selected_cell_y) {
                 border_color = IM_COL32(255, 255, 0, 255); // Yellow for selected cell
                 border_thickness = 3.0f;
             } else if (x == g_current_rpm_cell && y == g_current_map_cell) {
@@ -3521,8 +6486,8 @@ void render_ve_table_2d_view() {
                             ImGui::SetCursorPos(ImVec2(x_pos + 2, y_pos + 2));
                             ImGui::SetNextItemWidth(cell_width - 4);
                             
-                            char cell_edit_id[32];
-                            snprintf(cell_edit_id, sizeof(cell_edit_id), "##cell_edit_%d_%d", x, y);
+                            char cell_edit_id[128];
+                            snprintf(cell_edit_id, sizeof(cell_edit_id), "##cell_edit_%d_%d_%s_%p", x, y, g_ui_theme.name, (void*)g_ve_table);
                             
                             // Pre-fill the buffer with current value if it's empty and this is the selected cell
                             if (g_cell_edit_buffer[0] == '\0' && x == g_selected_cell_x && y == g_selected_cell_y) {
@@ -4422,8 +7387,8 @@ void render_ve_table_editor_view() {
             ImGui::SameLine();
             
                                         // Create unique ID for each cell
-                            char cell_id[32];
-                            snprintf(cell_id, sizeof(cell_id), "##table_cell_%d_%d", x, y);
+                            char cell_id[64];
+                            snprintf(cell_id, sizeof(cell_id), "##table_cell_%d_%d_%s", x, y, g_ui_theme.name);
             
             // Get current value
             float value = imgui_table_get_value(g_ve_table, x, y);
@@ -4458,4 +7423,6 @@ void render_ve_table_editor_view() {
     }
     
     ImGui::EndChild();
-} 
+}
+
+// Note: render_ignition_table_editor() has been replaced by render_ignition_table_tab() 

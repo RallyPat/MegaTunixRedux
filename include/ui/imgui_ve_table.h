@@ -10,31 +10,31 @@ extern "C" {
 #include <stdbool.h>
 #include <stddef.h>
 
-// Table types supported by the system
+// Table types for different ECU parameters
 typedef enum {
-    TABLE_TYPE_VE = 0,
-    TABLE_TYPE_IGNITION,
-    TABLE_TYPE_MAF_VE,
-    TABLE_TYPE_IDLE_VE,
-    TABLE_TYPE_BOOST,
-    TABLE_TYPE_VVT,
-    TABLE_TYPE_CORRECTION,
-    TABLE_TYPE_GPPWM,
+    TABLE_TYPE_VE = 0,           // Volumetric Efficiency (fuel)
+    TABLE_TYPE_IGNITION,         // Ignition timing
+    TABLE_TYPE_AFR,              // Air-Fuel Ratio
+    TABLE_TYPE_BOOST,            // Boost control
+    TABLE_TYPE_IDLE,             // Idle control
+    TABLE_TYPE_LAUNCH,           // Launch control
     TABLE_TYPE_COUNT
 } TableType;
 
-// Table metadata structure
+// Table metadata with type-specific information
 typedef struct {
+    TableType type;
     char name[64];
-    char display_name[64];
+    char description[256];
+    char x_axis_label[32];
+    char y_axis_label[32];
+    char value_label[32];
     char units[16];
-    float scale;
     float min_value;
     float max_value;
-    int digits;
-    TableType type;
-    bool enabled;
+    float default_value;
     bool editable;
+    bool visible;
 } TableMetadata;
 
 // 3D view state
@@ -58,45 +58,16 @@ typedef struct {
     bool initialized;
 } ImGuiVETexture;
 
-// Extended table structure
+// Enhanced table structure with type support
 typedef struct {
-    // Basic table data
+    int width;
+    int height;
     float** data;
     float* x_axis;
     float* y_axis;
-    int width;
-    int height;
-    
-    // Table metadata
     TableMetadata metadata;
-    
-    // Table switching support
-    int active_table_index;
-    int table_count;
-    char table_names[4][64];  // Support up to 4 switchable tables
-    
-    // 3D view data
-    ImGuiVE3DView* view_3d;
-    ImGuiVETexture* texture;
-    
-    // Table-specific data
-    union {
-        struct {
-            // VE table specific
-            float idle_rpm;
-            float max_rpm;
-        } ve;
-        struct {
-            // Ignition table specific
-            float base_timing;
-            float max_advance;
-        } ignition;
-        struct {
-            // Boost table specific
-            float target_boost;
-            float wastegate_duty;
-        } boost;
-    } specific;
+    bool is_modified;
+    char filename[256];
 } ImGuiTable;
 
 // Function declarations
@@ -119,9 +90,7 @@ const char* imgui_table_get_active_name(ImGuiTable* table);
 
 // Table type specific functions
 ImGuiTable* imgui_ve_table_create(int width, int height);
-ImGuiTable* imgui_ignition_table_create(int width, int height);
-ImGuiTable* imgui_boost_table_create(int width, int height);
-ImGuiTable* imgui_vvt_table_create(int width, int height);
+// Note: ignition table functions are defined below
 
 // Rendering functions
 void imgui_table_render_2d(ImGuiTable* table, float width, float height);
@@ -143,6 +112,39 @@ void imgui_ve_3d_view_reset(ImGuiVE3DView* view);
 void imgui_ve_table_render_2d(ImGuiTable* table, float width, float height);
 void imgui_ve_table_render_3d(ImGuiTable* table, ImGuiVE3DView* view, float width, float height);
 void imgui_ve_table_handle_input(ImGuiTable* table, ImGuiVE3DView* view, float width, float height);
+
+// Interpolation methods for professional table editing
+typedef enum {
+    INTERPOLATION_LINEAR = 0,    // Linear interpolation (fast, simple)
+    INTERPOLATION_CUBIC,         // Cubic interpolation (smooth curves)
+    INTERPOLATION_SPLINE,        // Spline interpolation (natural curves)
+    INTERPOLATION_COUNT
+} InterpolationMethod;
+
+// Professional interpolation functions
+bool imgui_table_interpolate_between_cells(ImGuiTable* table, int x1, int y1, int x2, int y2, 
+                                         InterpolationMethod method, bool preview_mode);
+bool imgui_table_interpolate_horizontal(ImGuiTable* table, int start_x, int end_x, int y, 
+                                      InterpolationMethod method);
+bool imgui_table_interpolate_vertical(ImGuiTable* table, int x, int start_y, int end_y, 
+                                    InterpolationMethod method);
+bool imgui_table_interpolate_2d(ImGuiTable* table, int start_x, int start_y, int end_x, int end_y, 
+                               InterpolationMethod method);
+
+// Professional smoothing functions
+bool imgui_table_gaussian_smooth(ImGuiTable* table, int start_x, int start_y, int end_x, int end_y, 
+                                float sigma, bool preserve_edges);
+bool imgui_table_moving_average_smooth(ImGuiTable* table, int start_x, int start_y, int end_x, int end_y, 
+                                     int window_size, bool horizontal_only);
+bool imgui_table_bilateral_smooth(ImGuiTable* table, int start_x, int start_y, int end_x, int end_y, 
+                                 float spatial_sigma, float intensity_sigma);
+bool imgui_table_smart_smooth(ImGuiTable* table, int start_x, int start_y, int end_x, int end_y);
+
+// Ignition table specific functions
+bool imgui_ignition_table_create(ImGuiTable* table, int width, int height);
+void imgui_ignition_table_load_demo_data(ImGuiTable* table);
+void imgui_ignition_table_render_editor(ImGuiTable* table, float width, float height);
+void imgui_ignition_table_handle_input(ImGuiTable* table, ImGuiVE3DView* view, float width, float height);
 
 #ifdef __cplusplus
 }
