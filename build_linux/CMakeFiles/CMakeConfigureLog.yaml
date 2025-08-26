@@ -529,3 +529,43 @@ events:
       
       
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake:101 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake:52 (cmake_check_source_compiles)"
+      - "/usr/share/cmake-3.28/Modules/FindThreads.cmake:97 (CHECK_C_SOURCE_COMPILES)"
+      - "/usr/share/cmake-3.28/Modules/FindThreads.cmake:163 (_threads_check_libc)"
+      - "plugins/ecu/speeduino_plugin/CMakeLists.txt:10 (find_package)"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d"
+      binary: "/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d"
+    cmakeVariables:
+      CMAKE_C_FLAGS: " -Wall -Wextra -fPIC -D__LINUX__"
+      CMAKE_C_FLAGS_DEBUG: "-g -O0 -DDEBUG"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: '/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_aa674/fast
+        gmake[1]: Entering directory '/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_aa674.dir/build.make CMakeFiles/cmTC_aa674.dir/build
+        gmake[2]: Entering directory '/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d'
+        Building C object CMakeFiles/cmTC_aa674.dir/src.c.o
+        /usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD  -Wall -Wextra -fPIC -D__LINUX__  -std=gnu17 -o CMakeFiles/cmTC_aa674.dir/src.c.o -c /home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d/src.c
+        Linking C executable cmTC_aa674
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_aa674.dir/link.txt --verbose=1
+        /usr/bin/cc  -Wall -Wextra -fPIC -D__LINUX__  CMakeFiles/cmTC_aa674.dir/src.c.o -o cmTC_aa674 
+        gmake[2]: Leaving directory '/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d'
+        gmake[1]: Leaving directory '/home/pat/Documents/GitHubRepos/MegaTunixRedux/build_linux/CMakeFiles/CMakeScratch/TryCompile-f1YI7d'
+        
+      exitCode: 0
+...

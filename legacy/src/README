@@ -1,0 +1,57 @@
+# MegaTunix Redux - Source Code
+
+**Original MegaTunix designed and written by David J. Andruczyk**  
+**Redux version by Pat Burke (2025)**
+
+This directory contains the source code for MegaTunix Redux, a complete ground-up rewrite 
+using modern technologies including SDL2/Clay UI for rendering and cross-platform compatibility.
+
+## Architecture Overview
+
+The Redux version maintains the plugin-based architecture of the original but with significant 
+modernization:
+
+- **Modern UI**: Clay immediate-mode UI framework with SDL2 rendering
+- **Cross-platform**: Native Linux, Windows, and macOS support  
+- **Real-time Performance**: Hardware-accelerated rendering and optimized data streams
+- **Plugin System**: Extensible ECU protocol support (see plugins/ subdirectory)
+
+## System Requirements
+
+**Dependencies:**
+- SDL2 and SDL2_ttf (cross-platform graphics and text)
+- CMake 3.10+ (build system)
+- C11 compatible compiler (GCC, Clang, MSVC)
+
+**Platform-specific packages:**
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt install build-essential cmake libsdl2-dev libsdl2-ttf-dev pkg-config
+```
+
+**macOS (Homebrew):**
+```bash
+brew install cmake sdl2 sdl2_ttf pkg-config
+```
+
+**Windows (MSYS2/MinGW):**
+```bash
+pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_ttf
+```
+
+## Building
+
+See the main project README.md for complete build instructions.
+
+## Plugin Development
+
+The plugins/ directory contains ECU communication modules. See plugins/README for 
+information on developing new ECU protocol support.
+
+---
+
+*Original inspiration from Bruce Bowling, Al Grippo (MegaSquirt), Eric Fahlgren, 
+Guy Hill (MegaTune), and Phil Tobin (TunerStudio MS).*
+
+

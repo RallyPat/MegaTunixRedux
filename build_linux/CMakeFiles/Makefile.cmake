@@ -12,6 +12,9 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
   "/home/pat/Documents/GitHubRepos/MegaTunixRedux/desktop/megatunix-redux.desktop.in"
+  "/home/pat/Documents/GitHubRepos/MegaTunixRedux/plugins/ecu/CMakeLists.txt"
+  "/home/pat/Documents/GitHubRepos/MegaTunixRedux/plugins/ecu/speeduino_plugin/CMakeLists.txt"
+  "/home/pat/Documents/GitHubRepos/MegaTunixRedux/plugins/visualization/chart_plugin/CMakeLists.txt"
   "/home/pat/Documents/GitHubRepos/MegaTunixRedux/tests/CMakeLists.txt"
   "/usr/share/cmake-3.28/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in"
   "/usr/share/cmake-3.28/Modules/CMakeCInformation.cmake"
@@ -25,6 +28,9 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake"
   "/usr/share/cmake-3.28/Modules/CPack.cmake"
   "/usr/share/cmake-3.28/Modules/CPackComponent.cmake"
+  "/usr/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake"
+  "/usr/share/cmake-3.28/Modules/CheckIncludeFile.cmake"
+  "/usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU-C.cmake"
   "/usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake"
@@ -34,8 +40,10 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake"
   "/usr/share/cmake-3.28/Modules/FindPackageMessage.cmake"
   "/usr/share/cmake-3.28/Modules/FindPkgConfig.cmake"
+  "/usr/share/cmake-3.28/Modules/FindThreads.cmake"
   "/usr/share/cmake-3.28/Modules/FindZLIB.cmake"
   "/usr/share/cmake-3.28/Modules/GoogleTest.cmake"
+  "/usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-GNU-C.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake"
   "/usr/share/cmake-3.28/Modules/Platform/Linux-GNU.cmake"
@@ -60,10 +68,16 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "CPackConfig.cmake"
   "CPackSourceConfig.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
+  "plugins/ecu/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "plugins/ecu/speeduino_plugin/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "plugins/visualization/chart_plugin/CMakeFiles/CMakeDirectoryInformation.cmake"
   "tests/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/megatunix-redux.dir/DependInfo.cmake"
+  "plugins/ecu/CMakeFiles/test_plugin.dir/DependInfo.cmake"
+  "plugins/ecu/speeduino_plugin/CMakeFiles/speeduino_plugin.dir/DependInfo.cmake"
+  "plugins/visualization/chart_plugin/CMakeFiles/chart_plugin.dir/DependInfo.cmake"
   )

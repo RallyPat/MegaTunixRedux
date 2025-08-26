@@ -1,0 +1,81 @@
+name: megatunix_flutter
+description: "MegaTunix Redux - Professional ECU Tuning Software"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core UI dependencies
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  intl: ^0.19.0
+
+  # File operations
+  file_picker: ^6.1.1
+  path: ^1.9.0
+
+  # Development and debugging
+  flutter_riverpod: ^2.5.1
+  logging: ^1.2.0
+
+  # Performance and monitoring
+  # flutter_performance: ^0.1.0  # Not available on pub.dev
+  # memory_info: ^0.1.0  # Package doesn't exist
+
+  # Build optimization
+  build_runner: ^2.4.9
+  json_serializable: ^6.7.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Testing and quality
+  flutter_lints: ^5.0.0
+  test: ^1.25.2
+  mockito: ^5.4.4
+  integration_test:
+    sdk: flutter
+
+    # Code generation
+  freezed: ^2.5.2
+  json_annotation: ^4.9.0
+
+# Flutter-specific configuration
+flutter:
+
+  # Enable Material Design icons
+  uses-material-design: true
+
+  # App configuration
+  # Assets will be added when needed
+  # assets:
+  #   - assets/images/
+  #   - assets/fonts/
+
+  # Custom fonts can be added here when font files are available
+  # fonts:
+  #   - family: RobotoMono
+  #     fonts:
+  #       - asset: assets/fonts/RobotoMono-Regular.ttf
+  #       - asset: assets/fonts/RobotoMono-Bold.ttf
+  #         weight: 700
+
+  # Build optimization
+  generate: true
+
+# Build optimization settings
+flutter_build_config:
+  tree_shake_icons: true
+  build_mode:
+    release:
+      shrink: true
+      obfuscate: true
+      split_debug_info: build/symbols

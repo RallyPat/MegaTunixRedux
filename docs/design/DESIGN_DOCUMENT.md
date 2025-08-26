@@ -1,200 +1,253 @@
-# DESIGN DOCUMENT - MegaTunix Redux
+# MegaTunix Redux - Design Document
+
+**Version 2.0.0 - Phase 10 Complete: Real-Time Data Integration**
 
 ## 🎯 **Project Overview**
 
-MegaTunix Redux is a modern, cross-platform ECU tuning application built with Dear ImGui, SDL2, and OpenGL. The application provides professional-grade ECU communication, real-time data visualization, and advanced table editing capabilities.
+MegaTunix Redux is a modern, modular ECU tuning platform designed for professional use, featuring a comprehensive plugin architecture and real-time data visualization capabilities. The project has evolved from a monolithic codebase to a clean, extensible architecture supporting real-time ECU monitoring and analysis.
 
-## 🏗️ **Architecture Overview**
+## 🏗️ **Architecture Evolution**
 
-### **Core Technologies**
-- **Language**: C/C++ with C++17 features
-- **UI Framework**: Dear ImGui with SDL2
-- **Graphics**: OpenGL for rendering
-- **Communication**: Custom ECU library with Speeduino CRC protocol
-- **Build System**: CMake for cross-platform compilation
+### **Phase 1-6: Modular Refactoring (Completed)**
+- **Goal**: Transform monolithic codebase into maintainable modules
+- **Result**: 6 specialized modules with clean interfaces
+- **Benefit**: Improved maintainability and development efficiency
 
-### **Key Components**
+### **Phase 7: Real ECU Communication (Completed)**
+- **Goal**: Implement functional ECU communication plugins
+- **Result**: Speeduino plugin with CRC protocol support
+- **Benefit**: Real hardware communication capabilities
 
-#### **Main Application (`src/main.cpp`)**
-- Application entry point and UI orchestration
-- Event handling and SDL integration
-- Tab-based interface management
-- Real-time data processing and visualization
+### **Phase 8: Data Visualization (Completed)**
+- **Goal**: Create professional chart and graph system
+- **Result**: Advanced visualization plugin with 8 chart types
+- **Benefit**: Professional data presentation and analysis
 
-#### **UI Components (`src/ui/`)**
-- **ImGui Runtime Display** (`imgui_runtime_display.cpp`): Real-time visualization with gauges and charts
-- **ImGui VE Table** (`imgui_ve_table.c`): 2D/3D table visualization and editing
-- **ImGui Communications** (`imgui_communications.cpp`): Communication status and controls
-- **ImGui File Dialog** (`imgui_file_dialog.cpp`): File operations interface
-- **ImGui Key Bindings** (`imgui_key_bindings.c`): Professional keybind system
+### **Phase 9: Chart Rendering (Completed)**
+- **Goal**: Implement actual chart drawing with ImGui
+- **Result**: High-performance chart rendering system
+- **Benefit**: Real-time chart updates and interactive features
 
-#### **ECU Communication (`src/ecu/`)**
-- **ECU Communication** (`ecu_communication.c`): Protocol implementation
-- **ECU Dynamic Protocols** (`ecu_dynamic_protocols.c`): Adaptive communication timing
-- **ECU INI Parser** (`ecu_ini_parser.c`): Configuration file parsing
+### **Phase 10: Data Bridge System (Completed)**
+- **Goal**: Real-time data streaming between ECU and visualization plugins
+- **Result**: High-performance data bridge with performance monitoring
+- **Benefit**: Live ECU data integration and analysis
 
-## 🎨 **UI Design Philosophy**
+## 🔧 **Core Architecture**
 
-### **Professional Interface**
-- Clean, modern design inspired by commercial tuning software
-- Consistent color scheme and typography
-- Responsive layout that adapts to window size
-- Intuitive navigation with tab-based organization
-
-### **Real-time Visualization**
-- Live gauges with configurable ranges and color-coded zones
-- Historical data charts with circular buffer implementation
-- Performance monitoring with FPS and data point statistics
-- Alert system with configurable thresholds
-
-### **Advanced Table Editing**
-- 2D heatmap visualization with color-coded values
-- 3D view with interactive controls (rotation, zoom, pan)
-- Direct cell editing with keyboard input
-- Professional keybind system with integrated legend
-
-## 🔧 **Technical Implementation**
-
-### **Real-time Data Visualization**
-
-#### **Data Management**
-```cpp
-struct DataSeries {
-    float data[MAX_DATA_POINTS];
-    int head;
-    int count;
-    bool full;
-};
+### **Module Structure**
+```
+MegaTunix Redux
+├── Core Application (main.cpp)
+├── UI Modules
+│   ├── VE Table Editor
+│   ├── UI Theme Manager
+│   ├── Logging System
+│   ├── Settings Manager
+│   ├── Table Operations
+│   └── ECU Integration
+├── Plugin System
+│   ├── Plugin Manager
+│   ├── Event System
+│   └── Plugin Interfaces
+├── Data Bridge System
+│   ├── ECU Plugin Integration
+│   ├── Visualization Plugin Integration
+│   └── Real-time Data Streaming
+└── External Libraries
+    ├── ImGui (UI Framework)
+    ├── SDL2 (Platform Layer)
+    └── OpenGL (Graphics)
 ```
 
-#### **Gauge System**
-- Multiple gauge types (bar, round, digital, linear)
-- Configurable ranges and color zones
-- Professional styling with gradients and shadows
-- Real-time value updates with smooth animations
+### **Plugin Architecture**
+- **Plugin Types**: ECU, Data Visualization, UI, Integration
+- **Dynamic Loading**: Runtime plugin discovery and loading
+- **Interface Contracts**: Well-defined plugin interfaces
+- **Lifecycle Management**: Init, update, cleanup phases
 
-#### **Chart System**
-- Historical data tracking with circular buffers
-- Performance-optimized rendering (500 point limit)
-- Axis labels and subtitles
-- Throttled updates for optimal performance
+### **Data Flow Architecture**
+```
+ECU Hardware → ECU Plugin → Data Bridge → Visualization Plugin → Charts
+     ↓              ↓           ↓              ↓              ↓
+  Serial Port   Protocol    Real-time     Rendering    User Display
+  (USB/RS232)   Handler     Streaming     Engine       Interface
+```
 
-### **VE Table Editor**
+## 📊 **Data Bridge System**
 
-#### **2D Visualization**
-- Heatmap with color-coded VE values
-- Professional color legend
-- Axis labels on all four sides
-- Mouse interaction for cell selection
+### **Core Components**
+- **DataConnection**: Links ECU plugins to visualization plugins
+- **Plugin Registry**: Automatic registration of compatible plugins
+- **Streaming Engine**: High-performance data transfer (up to 100Hz)
+- **Performance Monitor**: Real-time metrics and optimization
 
-#### **3D Visualization**
-- OpenGL-based 3D rendering
-- Interactive controls (rotation, zoom, pan)
-- Texture-based rendering for ImGui integration
-- Proper 3D transformations with rotation matrices
+### **Data Bridge Features**
+- **Real-time Streaming**: Configurable update rates (1-100Hz)
+- **Automatic Registration**: Plugins auto-register on load
+- **Thread Safety**: Concurrent access protection
+- **Performance Tracking**: Transfer rates, success rates, memory usage
+- **Error Handling**: Graceful degradation and recovery
 
-#### **Professional Keybind System**
-- Plus/minus key increment/decrement with configurable amounts
-- Asterisk (*) key for percentage-based scaling
-- Auto-exit text fields and immediate action application
-- Integrated legend panel with responsive design
-- Interactive sliders for parameter adjustment
+### **Supported Data Sources**
+- **RPM**: Engine revolutions per minute
+- **MAP**: Manifold absolute pressure
+- **Air Temperature**: Intake air temperature
+- **Timing**: Ignition timing advance
+- **Battery Voltage**: Electrical system voltage
+- **Custom Parameters**: Extensible parameter system
 
-### **ECU Communication**
+## 🎨 **Visualization System**
 
-#### **Speeduino Protocol**
-- Full CRC binary protocol implementation
-- Based on INI file specifications (202501.4.ini)
-- Adaptive timing system for optimal performance
-- Comprehensive error handling and recovery
+### **Chart Types**
+1. **Line Charts**: Time-series data visualization
+2. **Scatter Plots**: Point-based data representation
+3. **Bar Charts**: Categorical data comparison
+4. **Area Charts**: Filled area visualization
+5. **3D Surface**: Three-dimensional data plots
+6. **Heatmaps**: Color-coded data matrices
+7. **Gauges**: Real-time value indicators
+8. **Digital**: Numerical value displays
 
-#### **Connection Management**
-- Asynchronous connection handling
-- Non-blocking UI during connection attempts
-- Real-time connection status feedback
-- Automatic protocol detection and configuration
+### **Rendering Features**
+- **ImGui Integration**: Direct drawing list access
+- **Coordinate Systems**: World-to-screen transformation
+- **Interactive Controls**: Zoom, pan, tooltips
+- **Professional Appearance**: Grid lines, axes, legends
+- **Performance Optimization**: Efficient rendering algorithms
 
-## 📊 **Performance Considerations**
+## 🔌 **Plugin System**
 
-### **Real-time Processing**
-- 60 FPS target for all visualizations
-- Throttled updates when ECU connected (every 2 frames)
-- Efficient data point storage with `memmove`
-- Limited chart processing to 500 points
+### **Plugin Interface Design**
+```cpp
+typedef struct {
+    char name[64];
+    char version[16];
+    char author[64];
+    char description[256];
+    PluginType type;
+    PluginStatus status;
+    bool (*init)(PluginContext* ctx);
+    void (*cleanup)(void);
+    void (*update)(void);
+    union {
+        ECUPluginInterface ecu;
+        DataVisualizationPluginInterface visualization;
+        UIPluginInterface ui;
+        IntegrationPluginInterface integration;
+    } interface;
+} PluginInterface;
+```
 
-### **Memory Management**
-- Proper cleanup and resource management
-- Circular buffers for historical data
-- Unique IDs for ImGui elements to prevent conflicts
-- Safe ImGui calls only during rendering phase
+### **Plugin Lifecycle**
+1. **Discovery**: Scan plugin directories
+2. **Loading**: Dynamic library loading
+3. **Validation**: Interface compatibility check
+4. **Registration**: Auto-register with data bridge
+5. **Initialization**: Plugin-specific setup
+6. **Operation**: Runtime execution
+7. **Cleanup**: Resource deallocation
 
-### **Cross-platform Compatibility**
-- Linux-focused development
-- Windows and Mac support via CMake
-- SDL2 for platform abstraction
-- OpenGL for graphics rendering
+### **Plugin Types**
 
-## 🎯 **User Experience Design**
+#### **ECU Plugins**
+- **Purpose**: Hardware communication and protocol handling
+- **Features**: Serial communication, protocol implementation, data parsing
+- **Example**: Speeduino plugin with CRC validation
 
-### **Professional Workflow**
-- Intuitive tab-based navigation
-- Consistent keyboard shortcuts
-- Real-time feedback for all operations
-- Comprehensive help system with integrated legend
+#### **Data Visualization Plugins**
+- **Purpose**: Data presentation and analysis
+- **Features**: Chart rendering, data processing, interactive controls
+- **Example**: Advanced Chart Plugin with real-time updates
 
-### **Accessibility**
-- High contrast color schemes
-- Configurable font sizes
-- Keyboard navigation support
-- Clear visual feedback for all actions
+#### **UI Plugins**
+- **Purpose**: Custom interface components
+- **Features**: Custom widgets, panels, and controls
+- **Example**: Specialized tuning interfaces
 
-### **Error Handling**
-- Comprehensive error checking
-- User-friendly error messages
-- Graceful degradation on failures
-- Recovery mechanisms for communication issues
+#### **Integration Plugins**
+- **Purpose**: Third-party system integration
+- **Features**: Data import/export, external API communication
+- **Example**: Cloud data synchronization
 
-## 🚀 **Future Architecture Considerations**
+## 🚀 **Performance Characteristics**
 
-### **Modular Design**
-- Component-based architecture for easy extension
-- Plugin system for additional ECU protocols
-- Configurable UI layouts
-- Extensible data visualization system
+### **Data Bridge Performance**
+- **Update Rate**: Up to 100Hz with sub-millisecond latency
+- **Data Throughput**: High-frequency parameter streaming
+- **Memory Efficiency**: Configurable data point limits
+- **CPU Utilization**: Optimized background processing
 
-### **Scalability**
-- Support for multiple ECU connections
-- Distributed processing capabilities
-- Cloud-based configuration storage
-- Multi-user collaboration features
+### **Chart Rendering Performance**
+- **Frame Rate**: 60+ FPS for smooth animations
+- **Data Points**: Support for thousands of data points
+- **Memory Management**: Automatic cleanup and optimization
+- **GPU Acceleration**: OpenGL-based rendering
 
-### **Advanced Features**
-- AI-driven table optimization (lowest priority)
-- Machine learning for tuning recommendations
-- Automated safety validation
-- Professional reporting and analysis tools
+### **Plugin System Performance**
+- **Loading Time**: Fast plugin discovery and loading
+- **Runtime Overhead**: Minimal impact on main application
+- **Memory Footprint**: Efficient resource management
+- **Scalability**: Support for multiple concurrent plugins
 
-## 📋 **Development Guidelines**
+## 🔒 **Security & Reliability**
 
-### **Code Quality**
-- Comprehensive error handling
-- Performance optimization for real-time operations
-- Cross-platform compatibility
-- Professional documentation and comments
+### **Plugin Validation**
+- **Interface Compliance**: Strict interface validation
+- **Resource Limits**: Memory and CPU usage constraints
+- **Error Isolation**: Plugin failures don't crash main application
+- **Sandboxing**: Isolated plugin execution environment
+
+### **Data Integrity**
+- **CRC Validation**: Data integrity checking for ECU communication
+- **Error Handling**: Comprehensive error detection and recovery
+- **Data Validation**: Input validation and sanitization
+- **Recovery Mechanisms**: Automatic recovery from failures
+
+## 📈 **Future Development**
+
+### **Phase 11: Advanced Analytics & AI**
+- **Machine Learning**: Predictive maintenance and optimization
+- **Data Analytics**: Statistical analysis and trend detection
+- **Advanced Visualizations**: 3D plots and specialized charts
+- **Cloud Integration**: Remote monitoring and data synchronization
+
+### **Phase 12: Production Features**
+- **User Preferences**: Save/restore configurations
+- **Professional Reporting**: Data export and analysis reports
+- **Security Enhancements**: Advanced plugin sandboxing
+- **Cross-Platform**: Windows and macOS deployment
+
+## 🧪 **Testing & Validation**
 
 ### **Testing Strategy**
-- Unit testing for core functionality
-- Integration testing for ECU communication
-- UI testing for user interface validation
-- Performance testing for real-time operations
+- **Unit Testing**: Individual module testing
+- **Integration Testing**: Module interaction testing
+- **Performance Testing**: Load and stress testing
+- **User Acceptance**: Real-world usage validation
 
-### **Documentation Standards**
-- Inline code documentation
-- Architecture documentation
-- User interface design documentation
-- API documentation for external interfaces
+### **Quality Assurance**
+- **Code Review**: Peer review process
+- **Static Analysis**: Automated code quality checks
+- **Dynamic Testing**: Runtime behavior validation
+- **Performance Profiling**: Optimization and benchmarking
+
+## 📚 **Documentation Standards**
+
+### **Code Documentation**
+- **Header Comments**: Module purpose and functionality
+- **Function Documentation**: Parameter descriptions and return values
+- **Interface Documentation**: API contracts and usage examples
+- **Architecture Documentation**: System design and relationships
+
+### **User Documentation**
+- **Installation Guide**: Setup and configuration
+- **User Manual**: Feature usage and workflows
+- **Developer Guide**: Plugin development and integration
+- **API Reference**: Complete interface documentation
 
 ---
 
-**Last Updated**: August 2025 - Design reflects completed Real-time Data Visualization and VE Table Editor with Professional Keybinds
-**Status**: Major milestones completed, ready for next phase of development
+**Document Version**: 2.0.0  
+**Last Updated**: Phase 10 Complete  
+**Next Milestone**: Phase 11 - Advanced Analytics & AI
