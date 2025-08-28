@@ -11,7 +11,7 @@ class SettingsTab extends StatefulWidget {
 }
 
 class _SettingsTabState extends State<SettingsTab> {
-  String _selectedPort = '/dev/ttyUSB0';
+  String _selectedPort = '/dev/ttyACM0';
   int _selectedBaudRate = 115200;
   String _selectedProtocol = 'Speeduino';
   bool _autoConnect = true;
@@ -272,9 +272,10 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  void _testConnection() {
+  void _testConnection() async {
     final ecuService = Provider.of<ECUService>(context, listen: false);
-    
+
+    // Show loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -291,37 +292,93 @@ class _SettingsTabState extends State<SettingsTab> {
       ),
     );
 
-    // Simulate connection test
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pop(context); // Close loading dialog
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Connection Test Result'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Port: $_selectedPort'),
-              Text('Baud Rate: $_selectedBaudRate'),
-              Text('Protocol: $_selectedProtocol'),
-              const SizedBox(height: 16),
-              const Text('Result: ✅ Connection successful!'),
-              const Text('ECU Type: Speeduino v202311'),
+    try {
+      // Attempt real ECU connection
+      print('Settings: Attempting real ECU connection...');
+      print('Settings: Port: $_selectedPort, Baud: $_selectedBaudRate, Protocol: $_selectedProtocol');
+
+      final success = await ecuService.connect(
+        port: _selectedPort,
+        baudRate: _selectedBaudRate,
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show result dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(success ? '✅ Connection Successful!' : '❌ Connection Failed'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Port: $_selectedPort'),
+                Text('Baud Rate: $_selectedBaudRate'),
+                Text('Protocol: $_selectedProtocol'),
+                const SizedBox(height: 16),
+                Text(success
+                  ? 'Real ECU connection established!\nLive data should now be streaming.'
+                  : 'Failed to connect to ECU.\nCheck USB connection and permissions.'
+                ),
+                if (success) ...[
+                  const SizedBox(height: 8),
+                  const Text('💡 Tip: Monitor console output for real-time data logging',
+                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      
-      // Start mock data to simulate successful connection
-      ecuService.startMockDataGeneration();
-    });
+        );
+      }
+
+      if (success) {
+        print('Settings: ✅ Real ECU connection successful!');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Connected to real ECU! Live data streaming...'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        print('Settings: ❌ Real ECU connection failed');
+      }
+
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show error dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('❌ Connection Error'),
+            content: Text('Error connecting to ECU: $e\n\nCheck USB connection and try again.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      print('Settings: Connection error: $e');
+    }
   }
 }

@@ -98,18 +98,24 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildDemoButton(BuildContext context, ECUService ecuService) {
-    final isConnected = ecuService.connectionState == ECUConnectionState.connected;
-    
+    final connectionState = ecuService.connectionState;
+    final isConnected = connectionState == ECUConnectionState.connected;
+
+    // Debug output
+    print('Dashboard: Connection state = $connectionState, isConnected = $isConnected');
+
     return FilledButton.icon(
       onPressed: () {
         if (isConnected) {
+          print('Dashboard: Disconnecting from ECU...');
           ecuService.disconnect();
         } else {
+          print('Dashboard: Starting demo mode...');
           ecuService.startMockDataGeneration();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('🚗 Demo mode started with simulated car data!'),
-              duration: Duration(seconds: 2),
+              content: Text('🚗 Demo mode started - use Settings → Test Connection for real ECU'),
+              duration: Duration(seconds: 3),
             ),
           );
         }
@@ -118,7 +124,7 @@ class DashboardView extends StatelessWidget {
         isConnected ? Icons.stop : Icons.play_arrow,
         size: 18,
       ),
-      label: Text(isConnected ? 'Stop Demo' : 'Start Demo'),
+      label: Text(isConnected ? 'Disconnect ECU' : 'Start Demo Mode'),
       style: FilledButton.styleFrom(
         backgroundColor: isConnected ? Colors.red : Colors.green,
         foregroundColor: Colors.white,
@@ -231,7 +237,7 @@ class DashboardView extends StatelessWidget {
             _buildStatusItem(
               context,
               'ECU Connection',
-              isConnected ? 'Connected (Demo)' : 'Disconnected',
+              isConnected ? 'Connected to ECU' : 'Disconnected - Go to Settings → Test Connection',
               isConnected ? Icons.link : Icons.link_off,
               isConnected ? Colors.green : Colors.red,
             ),

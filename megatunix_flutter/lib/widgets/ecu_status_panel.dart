@@ -50,7 +50,7 @@ class _ECUStatusPanelState extends State<ECUStatusPanel> {
                   child: _buildStatusItem(
                     icon: Icons.check_circle,
                     label: 'System',
-                    value: _ecuService.connectionState.name.toUpperCase(),
+                    value: _ecuService.connectionState.toString().split('.').last.toUpperCase(),
                     color: _getSystemStatusColor(),
                   ),
                 ),

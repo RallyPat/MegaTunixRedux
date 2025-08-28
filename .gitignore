@@ -95,5 +95,10 @@ Thumbs.db
 *.tmp
 *.temp
 *~
+
+# Design documents (large files, not for version control)
+docs/design/
+
+# Flutter SDK
 flutter/
 flutter_linux_3.24.3-stable.tar.xz

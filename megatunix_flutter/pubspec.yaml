@@ -21,6 +21,9 @@ dependencies:
   file_picker: ^6.1.1
   path: ^1.9.0
 
+  # Serial communication
+  flutter_libserialport: ^0.3.0
+
   # Development and debugging
   flutter_riverpod: ^2.5.1
   logging: ^1.2.0
@@ -43,8 +46,7 @@ dev_dependencies:
   mockito: ^5.4.4
   integration_test:
     sdk: flutter
-
-    # Code generation
+  # Code generation
   freezed: ^2.5.2
   json_annotation: ^4.9.0
 

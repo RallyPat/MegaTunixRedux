@@ -7,6 +7,22 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
+// Serial plugin integration
+#include <flutter_linux/flutter_linux.h>
+#include <gtk/gtk.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;

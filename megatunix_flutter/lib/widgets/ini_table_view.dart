@@ -28,9 +28,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../services/ini_parser.dart';
 import '../services/ini_msq_service.dart';
 import '../services/realtime_data_service.dart';
+import '../services/global_shortcuts_service.dart';
 import '../models/table_cursor.dart';
 import '../models/ecu_data.dart';
 import '../widgets/table_cursor_overlay.dart';
@@ -138,6 +140,12 @@ class _INITableViewState extends State<INITableView> {
   /// Shows current engine operating point with 3-second fade trail
   TableCursor _currentCursor = const TableCursor.hidden();
   bool _cursorEnabled = true;
+  
+  /// Undo/Redo system for table editing operations
+  /// Maintains stacks of reversible actions for professional editing workflow
+  final List<TableEditAction> _undoStack = [];
+  final List<TableEditAction> _redoStack = [];
+  static const int _maxUndoStackSize = 50;
   
   /// ECU table type for determining appropriate thermal color schemes
   /// Used by TunerStudioColors to apply correct heatmap rendering
@@ -576,8 +584,8 @@ class _INITableViewState extends State<INITableView> {
                 ),
                 const SizedBox(height: 4),
                 _buildQuickKeyRow('Arrow Keys', 'Navigate cells'),
-                _buildQuickKeyRow('Shift+Arrow', 'Select area'), 
-                _buildQuickKeyRow('Ctrl+Arrow', 'Add to selection'),
+                _buildQuickKeyRow('Shift+Arrow', 'Select range'), 
+                _buildQuickKeyRow('Ctrl+Arrow', 'Multi-select'),
                 _buildQuickKeyRow('Ctrl+C', 'Copy selection'),
                 _buildQuickKeyRow('Ctrl+Shift+V', 'Paste data'),
                 _buildQuickKeyRow('Ctrl+A', 'Select all'),
@@ -587,6 +595,8 @@ class _INITableViewState extends State<INITableView> {
                 _buildQuickKeyRow('Ctrl+S', 'Smooth selection'),
                 _buildQuickKeyRow('F2/Enter', 'Edit cell'),
                 _buildQuickKeyRow('Delete', 'Clear cells'),
+                _buildQuickKeyRow('Ctrl+Z', 'Undo operation'),
+                _buildQuickKeyRow('Ctrl+Y', 'Redo operation'),
                 _buildQuickKeyRow('Esc', 'Cancel/Clear'),
               ],
             ),
@@ -965,6 +975,14 @@ class _INITableViewState extends State<INITableView> {
   void _submitEdit(int row, int col, String value) {
     final doubleValue = double.tryParse(value);
     if (doubleValue != null) {
+      final oldValue = widget.tableData[row][col];
+      
+      // Only create undo action if value actually changed
+      if (oldValue != doubleValue) {
+        final undoAction = _createCellEditAction(row, col, oldValue, doubleValue);
+        _addUndoAction(undoAction);
+      }
+      
       widget.onValueChanged(row, col, doubleValue);
       setState(() {
         widget.tableData[row][col] = doubleValue;
@@ -1053,6 +1071,15 @@ class _INITableViewState extends State<INITableView> {
             _selectedCells.clear();
           });
         }
+        return KeyEventResult.handled;
+        
+      // Undo/Redo operations
+      case LogicalKeyboardKey.keyZ when isCtrl && !isShift:
+        _performUndo();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyY when isCtrl:
+      case LogicalKeyboardKey.keyZ when isCtrl && isShift:
+        _performRedo();
         return KeyEventResult.handled;
         
       case LogicalKeyboardKey.delete:
@@ -1153,6 +1180,15 @@ class _INITableViewState extends State<INITableView> {
     }
     
     await Clipboard.setData(ClipboardData(text: clipboardText));
+    
+    // Show copy feedback
+    int cellCount = _selectedCells.isEmpty ? 1 : _selectedCells.length;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('📄 Copied $cellCount cell${cellCount == 1 ? '' : 's'} to clipboard'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _pasteSelection() async {
@@ -1500,4 +1536,145 @@ class _INITableViewState extends State<INITableView> {
     
     setState(() {});
   }
+  
+  /// Perform undo operation (Ctrl+Z)
+  void _performUndo() {
+    if (_undoStack.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nothing to undo')),
+      );
+      return;
+    }
+    
+    final action = _undoStack.removeLast();
+    _redoStack.add(action);
+    
+    // Apply undo
+    _applyTableEditAction(action, isUndo: true);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Undid: ${action.description}')),
+    );
+  }
+  
+  /// Perform redo operation (Ctrl+Y or Ctrl+Shift+Z)
+  void _performRedo() {
+    if (_redoStack.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nothing to redo')),
+      );
+      return;
+    }
+    
+    final action = _redoStack.removeLast();
+    _undoStack.add(action);
+    
+    // Apply redo
+    _applyTableEditAction(action, isUndo: false);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Redid: ${action.description}')),
+    );
+  }
+  
+  /// Add action to undo stack
+  void _addUndoAction(TableEditAction action) {
+    _undoStack.add(action);
+    _redoStack.clear(); // Clear redo stack on new action
+    
+    // Limit stack size
+    if (_undoStack.length > _maxUndoStackSize) {
+      _undoStack.removeAt(0);
+    }
+    
+    // Also add to global shortcuts service for comprehensive undo tracking
+    try {
+      final globalShortcuts = context.read<GlobalShortcutsService>();
+      globalShortcuts.addUndoAction(TableEditUndoAction(
+        tableName: widget.tableDefinition.name,
+        row: action.row,
+        col: action.col,
+        oldValue: action.oldValue,
+        newValue: action.newValue,
+        setValue: (row, col, value) {
+          widget.tableData[row][col] = value;
+          widget.onValueChanged(row, col, value);
+          setState(() {});
+        },
+      ));
+    } catch (e) {
+      // Global shortcuts service not available, continue with local undo only
+      print('Global shortcuts service not available: $e');
+    }
+  }
+  
+  /// Apply table edit action for undo/redo
+  void _applyTableEditAction(TableEditAction action, {required bool isUndo}) {
+    final value = isUndo ? action.oldValue : action.newValue;
+    widget.tableData[action.row][action.col] = value;
+    widget.onValueChanged(action.row, action.col, value);
+    setState(() {});
+  }
+  
+  /// Create undo action for a single cell edit
+  TableEditAction _createCellEditAction(int row, int col, double oldValue, double newValue) {
+    return TableEditAction(
+      type: TableEditActionType.cellEdit,
+      description: 'Edit cell [$row,$col]',
+      row: row,
+      col: col,
+      oldValue: oldValue,
+      newValue: newValue,
+    );
+  }
+  
+  /// Create undo action for batch operations (interpolation, smoothing, etc.)
+  TableEditAction _createBatchEditAction(String operation, Map<String, double> oldValues, Map<String, double> newValues) {
+    // For batch operations, we'll store the first changed cell as the primary action
+    // and the full changeset as additional data
+    final firstKey = oldValues.keys.first;
+    final parts = firstKey.split(',');
+    final row = int.parse(parts[0]);
+    final col = int.parse(parts[1]);
+    
+    return TableEditAction(
+      type: TableEditActionType.batchEdit,
+      description: '$operation (${oldValues.length} cells)',
+      row: row,
+      col: col,
+      oldValue: oldValues[firstKey]!,
+      newValue: newValues[firstKey]!,
+      batchOldValues: oldValues,
+      batchNewValues: newValues,
+    );
+  }
+}
+
+/// Table edit action for undo/redo system
+class TableEditAction {
+  final TableEditActionType type;
+  final String description;
+  final int row;
+  final int col;
+  final double oldValue;
+  final double newValue;
+  final Map<String, double>? batchOldValues;
+  final Map<String, double>? batchNewValues;
+  
+  TableEditAction({
+    required this.type,
+    required this.description,
+    required this.row,
+    required this.col,
+    required this.oldValue,
+    required this.newValue,
+    this.batchOldValues,
+    this.batchNewValues,
+  });
+}
+
+/// Types of table edit actions
+enum TableEditActionType {
+  cellEdit,
+  batchEdit,
 }

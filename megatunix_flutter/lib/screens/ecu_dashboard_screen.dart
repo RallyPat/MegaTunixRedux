@@ -68,10 +68,7 @@ class _ECUDashboardScreenState extends State<ECUDashboardScreen>
     super.didChangeDependencies();
     
     // Start mock data generation after dependencies are available
-    final ecuService = Provider.of<ECUService>(context, listen: false);
-    if (ecuService.connectionState == ECUConnectionState.disconnected) {
-      ecuService.startMockDataGeneration();
-    }
+    // Don't auto-start mock data - let user choose connection method
   }
 
   @override

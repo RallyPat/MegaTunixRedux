@@ -4,7 +4,7 @@ import '../services/ecu_service.dart';
 import '../models/ecu_data.dart';
 
 /// ECU Connection Panel Widget
-/// Shows connection status and provides connection management
+/// Shows connection status, protocol selection, and provides connection management
 class ECUConnectionPanel extends StatefulWidget {
   const ECUConnectionPanel({super.key});
 
@@ -23,6 +23,11 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
   String _ecuType = 'None';
   String _port = 'None';
   String _version = 'Unknown';
+  
+  // Protocol selection
+  ECUProtocol _selectedProtocol = ECUProtocol.speeduino;
+  bool _autoDetectProtocol = true;
+  bool _showAdvanced = false;
   
   // Statistics
   ECUStatistics? _statistics;
@@ -48,6 +53,11 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
       curve: Curves.easeInOut,
     ));
     
+    // Initialize state from service
+    _selectedProtocol = _ecuService.selectedProtocol;
+    _autoDetectProtocol = _ecuService.autoDetectProtocol;
+    _port = _ecuService.port;
+    
     // Listen to connection state changes
     _ecuService.connectionStream.listen((state) {
       if (mounted) {
@@ -65,6 +75,7 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
           SnackBar(
             content: Text('ECU Error: ${error.message}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -90,36 +101,76 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
     if (_connectionState == ECUConnectionState.connected) {
       await _ecuService.disconnect();
     } else {
-      await _ecuService.connect();
+      // Use current protocol selection for connection
+      await _ecuService.connect(
+        port: _port,
+        protocol: _autoDetectProtocol ? null : _selectedProtocol,
+      );
     }
   }
   
-  void _updateConnectionInfo() {
+  void _updateConnectionInfo() async {
     switch (_connectionState) {
       case ECUConnectionState.connected:
-        _ecuType = 'Speeduino';
+        _ecuType = _ecuService.protocolName;
         _port = _ecuService.port;
-        _version = 'v1.0'; // TODO: Get actual version from ECU
         _pulseController.repeat(reverse: true);
+        
+        // Get version info from ECU
+        try {
+          _version = await _ecuService.getVersion();
+        } catch (e) {
+          _version = 'Unknown';
+        }
+        
+        if (mounted) {
+          setState(() {});
+        }
         break;
       case ECUConnectionState.connecting:
-        _ecuType = 'Connecting...';
+        _ecuType = 'Detecting...';
         _port = _ecuService.port;
         _version = 'Unknown';
         break;
       case ECUConnectionState.disconnected:
         _ecuType = 'None';
-        _port = 'None';
+        _port = _ecuService.port;
         _version = 'Unknown';
         _pulseController.stop();
         break;
       case ECUConnectionState.error:
         _ecuType = 'Error';
-        _port = 'None';
+        _port = _ecuService.port;
         _version = 'Unknown';
         _pulseController.stop();
         break;
     }
+  }
+
+  void _onProtocolChanged(ECUProtocol? protocol) {
+    if (protocol != null && protocol != _selectedProtocol) {
+      setState(() {
+        _selectedProtocol = protocol;
+        _autoDetectProtocol = false; // Manual selection disables auto-detect
+      });
+      _ecuService.setProtocol(protocol);
+      _ecuService.setAutoDetectProtocol(false);
+    }
+  }
+  
+  void _onAutoDetectChanged(bool? enabled) {
+    if (enabled != null) {
+      setState(() {
+        _autoDetectProtocol = enabled;
+      });
+      _ecuService.setAutoDetectProtocol(enabled);
+    }
+  }
+  
+  void _onPortChanged(String port) {
+    setState(() {
+      _port = port;
+    });
   }
 
   @override
@@ -130,6 +181,7 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Connection status header
             Row(
               children: [
                 // Connection status indicator
@@ -141,12 +193,10 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
                       height: 16,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                                                color: _connectionState == ECUConnectionState.connected
-                            ? ECUTheme.getAccentColor('afr')
-                            : Colors.grey,
+                        color: _getConnectionIndicatorColor(),
                         boxShadow: _connectionState == ECUConnectionState.connected ? [
                           BoxShadow(
-                            color: ECUTheme.getAccentColor('afr').withOpacity(0.3),
+                            color: _getConnectionIndicatorColor().withOpacity(0.3),
                             blurRadius: 8 * _pulseAnimation.value,
                             spreadRadius: 2 * _pulseAnimation.value,
                           ),
@@ -170,14 +220,23 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
                       Text(
                         _getConnectionStatusText(),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _connectionState == ECUConnectionState.connected
-                              ? ECUTheme.getAccentColor('afr')
-                              : Colors.grey,
+                          color: _getConnectionIndicatorColor(),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
+                ),
+                
+                // Advanced settings toggle
+                IconButton(
+                  icon: Icon(_showAdvanced ? Icons.expand_less : Icons.expand_more),
+                  tooltip: 'Advanced Settings',
+                  onPressed: () {
+                    setState(() {
+                      _showAdvanced = !_showAdvanced;
+                    });
+                  },
                 ),
                 
                 // Connection toggle button
@@ -192,6 +251,122 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
               ],
             ),
             
+            // Advanced configuration panel
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  
+                  // Protocol selection
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ECU Protocol',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            
+                            // Auto-detect checkbox
+                            CheckboxListTile(
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              title: const Text('Auto-detect protocol'),
+                              value: _autoDetectProtocol,
+                              onChanged: _connectionState == ECUConnectionState.connected ? null : _onAutoDetectChanged,
+                            ),
+                            
+                            // Manual protocol selection
+                            if (!_autoDetectProtocol) ...[
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<ECUProtocol>(
+                                value: _selectedProtocol,
+                                decoration: const InputDecoration(
+                                  labelText: 'Select Protocol',
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: _ecuService.supportedProtocols.map((protocol) {
+                                  return DropdownMenuItem<ECUProtocol>(
+                                    value: protocol,
+                                    child: Row(
+                                      children: [
+                                        Icon(_getProtocolIcon(protocol), size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(_ecuService.protocolNames[protocol] ?? 'Unknown'),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: _connectionState == ECUConnectionState.connected ? null : _onProtocolChanged,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 20),
+                      
+                      // Connection settings
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Connection Settings',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 12),
+                            
+                            // Port selection
+                            TextFormField(
+                              initialValue: _port,
+                              decoration: const InputDecoration(
+                                labelText: 'Port',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.usb),
+                              ),
+                              onChanged: _connectionState == ECUConnectionState.connected ? null : _onPortChanged,
+                              enabled: _connectionState != ECUConnectionState.connected,
+                            ),
+                            
+                            const SizedBox(height: 12),
+                            
+                            // Baud rate selection
+                            DropdownButtonFormField<int>(
+                              value: _ecuService.baudRate,
+                              decoration: const InputDecoration(
+                                labelText: 'Baud Rate',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.speed),
+                              ),
+                              items: _ecuService.supportedBaudRates.map((rate) {
+                                return DropdownMenuItem<int>(
+                                  value: rate,
+                                  child: Text('$rate bps'),
+                                );
+                              }).toList(),
+                              onChanged: _connectionState == ECUConnectionState.connected ? null : (int? rate) {
+                                // TODO: Update baud rate in service
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              crossFadeState: _showAdvanced ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+            ),
+            
+            // Connected state details
             if (_connectionState == ECUConnectionState.connected) ...[
               const SizedBox(height: 20),
               const Divider(),
@@ -202,7 +377,7 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
                 children: [
                   Expanded(
                     child: _buildConnectionDetail(
-                      icon: Icons.memory,
+                      icon: _getProtocolIcon(_ecuService.detectedProtocol ?? _selectedProtocol),
                       label: 'ECU Type',
                       value: _ecuType,
                     ),
@@ -226,21 +401,60 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
               
               const SizedBox(height: 16),
               
+              // Protocol detection result
+              if (_ecuService.detectedProtocol != null && _autoDetectProtocol) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Auto-detected: ${_ecuService.protocolNames[_ecuService.detectedProtocol!]}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              
               // Connection quality indicator
               Row(
                 children: [
                   Icon(
                     Icons.signal_cellular_alt,
-                    color: ECUTheme.getAccentColor('afr'),
+                    color: _getConnectionQualityColor(),
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Connection Quality: Excellent',
+                    _getConnectionQualityText(),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: ECUTheme.getAccentColor('afr'),
+                      color: _getConnectionQualityColor(),
                     ),
                   ),
+                  const Spacer(),
+                  if (_statistics != null) ...[
+                    Text(
+                      '${_statistics!.packetsPerSecond.toStringAsFixed(1)} pps',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -288,17 +502,45 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
     );
   }
   
+  /// Get protocol icon
+  IconData _getProtocolIcon(ECUProtocol protocol) {
+    switch (protocol) {
+      case ECUProtocol.speeduino:
+        return Icons.flash_on;
+      case ECUProtocol.megasquirt:
+        return Icons.memory;
+      case ECUProtocol.epicEFI:
+        return Icons.developer_board;
+      default:
+        return Icons.device_unknown;
+    }
+  }
+  
+  /// Get connection indicator color
+  Color _getConnectionIndicatorColor() {
+    switch (_connectionState) {
+      case ECUConnectionState.connected:
+        return Colors.green;
+      case ECUConnectionState.connecting:
+        return Colors.orange;
+      case ECUConnectionState.disconnected:
+        return Colors.grey;
+      case ECUConnectionState.error:
+        return Colors.red;
+    }
+  }
+  
   /// Get connection status text based on current state
   String _getConnectionStatusText() {
     switch (_connectionState) {
       case ECUConnectionState.connected:
-        return 'Connected';
+        return 'Connected to $_ecuType';
       case ECUConnectionState.connecting:
-        return 'Connecting...';
+        return _autoDetectProtocol ? 'Auto-detecting protocol...' : 'Connecting to ${_ecuService.protocolNames[_selectedProtocol]}...';
       case ECUConnectionState.disconnected:
         return 'Disconnected';
       case ECUConnectionState.error:
-        return 'Error';
+        return 'Connection Error';
     }
   }
   
@@ -324,9 +566,30 @@ class _ECUConnectionPanelState extends State<ECUConnectionPanel>
       case ECUConnectionState.connecting:
         return Colors.orange;
       case ECUConnectionState.disconnected:
-        return ECUTheme.getAccentColor('afr');
+        return Colors.green;
       case ECUConnectionState.error:
         return Colors.red;
     }
+  }
+  
+  /// Get connection quality color based on statistics
+  Color _getConnectionQualityColor() {
+    if (_statistics == null) return Colors.grey;
+    
+    final successRate = _statistics!.successRate;
+    if (successRate > 0.9) return Colors.green;
+    if (successRate > 0.7) return Colors.orange;
+    return Colors.red;
+  }
+  
+  /// Get connection quality text based on statistics
+  String _getConnectionQualityText() {
+    if (_statistics == null) return 'Unknown Quality';
+    
+    final successRate = _statistics!.successRate;
+    if (successRate > 0.95) return 'Excellent Quality';
+    if (successRate > 0.9) return 'Good Quality';
+    if (successRate > 0.7) return 'Fair Quality';
+    return 'Poor Quality';
   }
 }

@@ -14,13 +14,7 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   void initState() {
     super.initState();
-    // Start mock data for demonstration
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ecuService = Provider.of<ECUService>(context, listen: false);
-      if (ecuService.connectionState == ECUConnectionState.disconnected) {
-        ecuService.startMockDataGeneration();
-      }
-    });
+    // No automatic mock data - let user choose real connection or demo mode
   }
 
   @override
@@ -37,10 +31,10 @@ class _DashboardTabState extends State<DashboardTab> {
                 children: [
                   Consumer<ECUService>(
                     builder: (context, ecuService, child) {
-                      return ElevatedButton.icon(
-                        onPressed: ecuService.connectionState == ECUConnectionState.connected
-                            ? () => ecuService.disconnect()
-                            : () => ecuService.startMockDataGeneration(),
+                       return ElevatedButton.icon(
+                         onPressed: ecuService.connectionState == ECUConnectionState.connected
+                             ? () => ecuService.disconnect()
+                             : () => _showConnectionOptions(context),
                         icon: Icon(
                           ecuService.connectionState == ECUConnectionState.connected
                               ? Icons.stop
@@ -169,5 +163,57 @@ class _DashboardTabState extends State<DashboardTab> {
     if (percentage < 0.3) return Colors.green;
     if (percentage < 0.7) return Colors.orange;
     return Colors.red;
+  }
+
+  void _showConnectionOptions(BuildContext context) {
+    final ecuService = Provider.of<ECUService>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Connection Options'),
+          content: const Text(
+            'Choose how to connect to ECU data:\n\n'
+            '• Real ECU: Connect to physical Speeduino/MegaSquirt\n'
+            '• Demo Mode: Use simulated data for testing'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navigate to ECU connection panel for real connection
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Use ECU Connection Panel for real ECU connection'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.usb),
+              label: const Text('Real ECU'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ecuService.startMockDataGeneration();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Demo mode activated - using simulated data'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Demo Mode'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

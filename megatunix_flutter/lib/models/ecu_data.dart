@@ -125,23 +125,23 @@ class SpeeduinoData {
     required this.timestamp,
   });
   
-  /// Create from raw data bytes
+  /// Create from raw data bytes (matching C++ Speeduino implementation)
   factory SpeeduinoData.fromBytes(Uint8List bytes) {
-    if (bytes.length < 20) {
-      throw ArgumentError('Data too short');
+    if (bytes.length < 26) { // Minimum length for Speeduino data
+      throw ArgumentError('Data too short for Speeduino format');
     }
-    
+
     return SpeeduinoData(
-      rpm: (bytes[0] << 8) | bytes[1],
-      map: bytes[2],
-      tps: bytes[3],
-      coolantTemp: bytes[4],
-      intakeTemp: bytes[5],
-      batteryVoltage: bytes[6] / 10.0,
-      afr: bytes[7] / 10.0,
-      timing: bytes[8],
-      boost: bytes[9],
-      engineStatus: bytes[10],
+      rpm: bytes.length > 15 ? (bytes[14] | (bytes[15] << 8)) : 0,
+      map: bytes.length > 5 ? (bytes[4] | (bytes[5] << 8)) : 0,
+      tps: bytes.length > 25 ? (bytes[25] * 0.5).round() : 0,
+      coolantTemp: bytes.length > 7 ? bytes[7] : 0,
+      intakeTemp: bytes.length > 8 ? bytes[8] : 0, // Intake temp at offset 8
+      batteryVoltage: bytes.length > 9 ? bytes[9] * 0.1 : 0.0,
+      afr: bytes.length > 10 ? bytes[10] * 0.1 : 0.0,
+      timing: bytes.length > 24 ? bytes[24] : 0, // Timing as signed byte
+      boost: bytes.length > 11 ? bytes[11] : 0, // Boost at offset 11
+      engineStatus: bytes.length > 12 ? bytes[12] : 0, // Engine status at offset 12
       timestamp: DateTime.now(),
     );
   }
@@ -248,6 +248,27 @@ class ECUStatistics {
     final now = DateTime.now();
     final duration = now.difference(lastActivity).inSeconds;
     return duration > 0 ? bytesTransmitted / duration : 0.0;
+  }
+
+  /// Create a copy with updated values
+  ECUStatistics copyWith({
+    int? bytesReceived,
+    int? bytesTransmitted,
+    int? packetsReceived,
+    int? packetsTransmitted,
+    int? errors,
+    int? timeouts,
+    DateTime? lastActivity,
+  }) {
+    return ECUStatistics(
+      bytesReceived: bytesReceived ?? this.bytesReceived,
+      bytesTransmitted: bytesTransmitted ?? this.bytesTransmitted,
+      packetsReceived: packetsReceived ?? this.packetsReceived,
+      packetsTransmitted: packetsTransmitted ?? this.packetsTransmitted,
+      errors: errors ?? this.errors,
+      timeouts: timeouts ?? this.timeouts,
+      lastActivity: lastActivity ?? this.lastActivity,
+    );
   }
   
   /// Calculate packet success rate
